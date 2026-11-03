@@ -1,57 +1,74 @@
-<ion-content [fullscreen]="true" class="login-page">
-  <ion-grid class="login-layout">
-    <ion-row>
-      <ion-col class="brand-panel" size="12" size-md="5" aria-label="FinanceTracker introduction">
-        <ion-text class="brand"><ion-text class="brand-mark" aria-hidden="true"><ion-text></ion-text><ion-text></ion-text></ion-text><ion-text>Finance<ion-text class="brand-blue">Tracker</ion-text></ion-text></ion-text>
-        <ion-text class="welcome-copy">
-          <ion-text class="eyebrow">SMART MONEY MANAGEMENT</ion-text>
-          <ion-text class="welcome-title">Take control of<ion-text>your finances.</ion-text></ion-text>
-          <ion-text class="welcome-description">Track every peso, reach your goals, and make better decisions with a clearer financial picture.</ion-text>
-        </ion-text>
-        <ion-card class="insight-card">
-          <ion-card-header class="card-heading"><ion-text>Monthly overview</ion-text><ion-text class="trend">&uarr; 12%</ion-text></ion-card-header>
-          <ion-card-content>
-            <ion-text class="mini-chart" aria-hidden="true"><ion-text style="height:30%"></ion-text><ion-text style="height:48%"></ion-text><ion-text style="height:38%"></ion-text><ion-text style="height:68%"></ion-text><ion-text style="height:55%"></ion-text><ion-text style="height:82%"></ion-text><ion-text style="height:100%"></ion-text></ion-text>
-            <ion-text class="card-total"><ion-note>Available balance</ion-note><ion-text>&#8369;15,000.00</ion-text></ion-text>
-          </ion-card-content>
-        </ion-card>
-        <ion-text class="brand-quote">&ldquo;Better money habits, a brighter future.&rdquo;</ion-text>
-      </ion-col>
+<ion-content [fullscreen]="true" class="login-content">
+  <div class="login-container">
+    <ion-card class="login-card">
+      <ion-card-content>
+        <ion-text class="brand-name"><ion-text>Finance</ion-text><ion-text class="brand-accent">Tracker</ion-text></ion-text>
+        <div class="login-heading">
+          <h1>Welcome back!</h1>
+          <p>Log in to manage your finances and stay on top of your goals.</p>
+        </div>
+        <ion-list lines="none" class="login-form">
+          <ion-label for="email">Email address</ion-label>
+          <ion-item class="input-wrap" [class.invalid]="formSubmitted && !isEmailValid">
+            <ion-icon name="mail-outline" slot="start" aria-hidden="true"></ion-icon>
+            <ion-input
+              id="email"
+              name="email"
+              type="email"
+              placeholder="you@gmail.com"
+              autocomplete="email"
+              [(ngModel)]="email"
+              (ionInput)="errorMessage = ''"
+            ></ion-input>
+          </ion-item>
+          <ion-text class="field-error" *ngIf="formSubmitted && !isEmailValid">Enter a valid email address.</ion-text>
 
-      <ion-col class="form-panel" size="12" size-md="7">
-        <ion-card class="login-card">
-          <ion-card-content>
-            <ion-text class="mobile-brand brand"><ion-text class="brand-mark" aria-hidden="true"><ion-text></ion-text><ion-text></ion-text></ion-text><ion-text>Finance<ion-text class="brand-blue">Tracker</ion-text></ion-text></ion-text>
-            <ion-text class="form-heading"><ion-text class="form-title">Welcome back!</ion-text><ion-text>Enter your details to sign in to your account.</ion-text></ion-text>
+          <ion-text class="password-label"
+            ><ion-label for="password">Password</ion-label
+            ><ion-button fill="clear" size="small" href="#forgot-password" (click)="$event.preventDefault()"
+              >Forgot password?</ion-button
+            ></ion-text
+          >
+          <ion-item class="input-wrap" [class.invalid]="formSubmitted && !isPasswordValid">
+            <ion-icon name="lock-closed-outline" slot="start" aria-hidden="true"></ion-icon>
+            <ion-input
+              id="password"
+              name="password"
+              [type]="showPassword ? 'text' : 'password'"
+              placeholder="Enter your password"
+              autocomplete="current-password"
+              [(ngModel)]="password"
+              (ionInput)="errorMessage = ''"
+            ></ion-input>
+            <ion-button
+              slot="end"
+              fill="clear"
+              class="show-password"
+              [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'"
+              (click)="showPassword = !showPassword"
+              ><ion-icon [name]="showPassword ? 'eye-off-outline' : 'eye-outline'"></ion-icon
+            ></ion-button>
+          </ion-item>
+          <ion-text class="field-error" *ngIf="formSubmitted && !isPasswordValid"
+            >Password must contain at least 6 characters.</ion-text
+          >
 
-            <ion-list lines="none" class="login-form">
-              <ion-label for="email">Email address</ion-label>
-              <ion-item class="input-wrap" [class.invalid]="formSubmitted && !isEmailValid">
-                <ion-icon name="mail-outline" slot="start" aria-hidden="true"></ion-icon>
-                <ion-input id="email" name="email" type="email" placeholder="you@gmail.com" autocomplete="email" [(ngModel)]="email" (ionInput)="errorMessage = ''"></ion-input>
-              </ion-item>
-              <ion-text class="field-error" *ngIf="formSubmitted && !isEmailValid">Enter a valid email address.</ion-text>
-
-              <ion-text class="password-label"><ion-label for="password">Password</ion-label><ion-button fill="clear" size="small" href="#forgot-password" (click)="$event.preventDefault()">Forgot password?</ion-button></ion-text>
-              <ion-item class="input-wrap" [class.invalid]="formSubmitted && !isPasswordValid">
-                <ion-icon name="lock-closed-outline" slot="start" aria-hidden="true"></ion-icon>
-                <ion-input id="password" name="password" [type]="showPassword ? 'text' : 'password'" placeholder="Enter your password" autocomplete="current-password" [(ngModel)]="password" (ionInput)="errorMessage = ''"></ion-input>
-                <ion-button slot="end" fill="clear" class="show-password" [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'" (click)="showPassword = !showPassword"><ion-icon [name]="showPassword ? 'eye-off-outline' : 'eye-outline'"></ion-icon></ion-button>
-              </ion-item>
-              <ion-text class="field-error" *ngIf="formSubmitted && !isPasswordValid">Password must contain at least 6 characters.</ion-text>
-
-              <ion-item class="remember"><ion-checkbox slot="start" name="rememberMe" [(ngModel)]="rememberMe"></ion-checkbox><ion-label>Remember me</ion-label></ion-item>
-              <ion-button expand="block" class="sign-in" [disabled]="isSubmitting" (click)="signIn()">
-                <ion-text *ngIf="!isSubmitting">Sign in <ion-icon name="arrow-forward-outline"></ion-icon></ion-text>
-                <ion-text *ngIf="isSubmitting" class="button-loading"><ion-text></ion-text>Signing in...</ion-text>
-              </ion-button>
-            </ion-list>
-            <ion-text class="register">Don&rsquo;t have an account? <ion-button fill="clear" size="small" href="#register" (click)="$event.preventDefault()">Create account</ion-button></ion-text>
-          </ion-card-content>
-        </ion-card>
-        <ion-text class="copyright">&copy; 2026 FinanceTracker. All rights reserved.</ion-text>
-      </ion-col>
-    </ion-row>
-  </ion-grid>
+          <ion-item class="remember"
+            ><ion-checkbox slot="start" name="rememberMe" [(ngModel)]="rememberMe"></ion-checkbox
+            ><ion-label>Remember me</ion-label></ion-item
+          >
+          <ion-button expand="block" class="sign-in" [disabled]="isSubmitting" (click)="signIn()">
+            <ion-text *ngIf="!isSubmitting">Sign in <ion-icon name="arrow-forward-outline"></ion-icon></ion-text>
+            <ion-text *ngIf="isSubmitting" class="button-loading"><ion-text></ion-text>Signing in...</ion-text>
+          </ion-button>
+        </ion-list>
+        <ion-text class="register"
+          >Don&rsquo;t have an account?
+          <ion-button fill="clear" size="small" href="#register" (click)="$event.preventDefault()"
+            >Create account</ion-button
+          ></ion-text
+        >
+      </ion-card-content>
+    </ion-card>
+  </div>
 </ion-content>
-<ion-alert [isOpen]="isAlertOpen" [header]="alertTitle" [message]="errorMessage" [buttons]="['OK']" (didDismiss)="isAlertOpen = false"></ion-alert>
