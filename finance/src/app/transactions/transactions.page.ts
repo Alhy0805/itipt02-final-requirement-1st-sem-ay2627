@@ -12,9 +12,19 @@ import { searchCircle, swapVertical } from 'ionicons/icons';
   imports: [IonIcon, IonInput, IonContent, CommonModule, FormsModule, IonCard, IonCardHeader, IonCardTitle, IonCardContent, IonSearchbar, IonButton, IonDatetime, IonItem, IonSelect, IonSelectOption, IonList, IonHeader, IonListHeader],
 })
 export class TransactionsPage implements OnInit {
+  
+  transactionAPI:string = "http://127.0.0.1:8000";
   constructor() {
     addIcons({searchCircle, swapVertical})
+    
+  
   }
-
-  ngOnInit() {}
+  
+  ngOnInit() {
+    //this.transactionAPI = `http://127.0.0.1:8000/transactionFilter/${user_id}`
+    //all
+    //this.transactionAPI = `http://127.0.0.1:8000/transactionFilter/${user_id}/${transaction_type}`
+    //w/transaction type
+  }
+  
 }
