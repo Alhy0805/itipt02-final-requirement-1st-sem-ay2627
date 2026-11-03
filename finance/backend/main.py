@@ -315,3 +315,24 @@ def getResources(user_id: int):
 
         if 'conn' in locals():
             conn.close()
+
+@app.get("/transactionFilter/{user_id}/{transaction_type}")
+def transactionFilter(user_id: int,transaction_type: str):
+    conn = get_connected()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+        cursor.execute(
+              """
+              SELECT transaction_type, amount, description,
+                     transaction_date, notes
+              FROM transactions
+              WHERE user_id = %s
+              AND transaction_type = %s;
+              """,
+              (user_id,transaction_type),
+          )
+        return cursor.fetchall()
+    finally:
+          cursor.close()
+          conn.close()
