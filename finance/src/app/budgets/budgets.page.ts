@@ -44,7 +44,10 @@ export class BudgetsPage implements OnInit {
   isSaving = false;
   errorMessage = '';
   newBudget: Budget = this.emptyBudget();
-  private readonly apiUrl = 'http://127.0.0.1:8000';
+
+  userBudget = [{}];
+
+  budgetAPI = "http://127.0.0.1:8000";
 
   constructor() {
     addIcons({ addOutline, calendarOutline, trendingUpOutline, walletOutline });
@@ -78,24 +81,22 @@ export class BudgetsPage implements OnInit {
       }
 
       const user = JSON.parse(savedUser) as { user_id?: number };
+
       this.userId = Number(user.user_id);
       if (!Number.isInteger(this.userId) || this.userId <= 0) {
         throw new Error('Your saved user session is invalid. Please sign in again.');
       }
-
-      const response = await fetch(`${this.apiUrl}/resources/${this.userId}`);
+      
+      
+      const response = await fetch(`http://127.0.0.1:8000/budget/${this.userId}`);
       if (!response.ok) {
         throw new Error(await this.getResponseError(response));
       }
 
       const resources = await response.json() as Partial<BudgetResources>;
-      if (!Array.isArray(resources.budgets) || !Array.isArray(resources.categories)) {
-        throw new Error('The backend returned incomplete budget or category data.');
-      }
-
-      this.budgets = resources.budgets;
-      this.categories = resources.categories;
-      localStorage.setItem('finance-resources', JSON.stringify(resources));
+      console.log(resources)
+      //check the console log sa browser
+      
     } catch (error) {
       console.error('Unable to load budgets:', error);
       this.errorMessage = error instanceof Error ? error.message : 'Unable to load budgets.';
@@ -124,7 +125,7 @@ export class BudgetsPage implements OnInit {
 
     this.isSaving = true;
     try {
-      const response = await fetch(`${this.apiUrl}/budgets`, {
+      const response = await fetch(`${this.budgetAPI}/budgets`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
