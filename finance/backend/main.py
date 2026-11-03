@@ -1,3 +1,6 @@
+from datetime import date
+from decimal import Decimal
+
 from fastapi import FastAPI, HTTPException, status
 from pydantic import BaseModel, Field
 from fastapi.middleware.cors import CORSMiddleware
@@ -18,6 +21,16 @@ app.add_middleware(
 class LoginRequest(BaseModel):
     email: str = Field(min_length=3, max_length=150)
     password: str = Field(min_length=1, max_length=255)
+
+
+class BudgetCreate(BaseModel):
+    user_id: int = Field(gt=0)
+    category_id: int = Field(gt=0)
+    budget_name: str = Field(min_length=1, max_length=100)
+    budget_amount: Decimal = Field(gt=0, max_digits=12, decimal_places=2)
+    start_date: date
+    end_date: date
+
 
 def get_connected():
     return mysql.connector.connect(
@@ -53,6 +66,72 @@ def getAccounts(user_id:int):
     accounts = cursor.fetchall()
     cursor.close()
     return accounts
+
+
+@app.post("/budgets", status_code=status.HTTP_201_CREATED)
+def createBudget(budget: BudgetCreate):
+    budget_name = budget.budget_name.strip()
+    if not budget_name:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Budget name cannot be blank.",
+        )
+    if budget.end_date < budget.start_date:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="End date must be on or after the start date.",
+        )
+
+    conn = get_connected()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute(
+            "SELECT category_id FROM categories WHERE category_id = %s AND user_id = %s",
+            (budget.category_id, budget.user_id),
+        )
+        if cursor.fetchone() is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Category not found for this user.",
+            )
+
+        cursor.execute(
+            """
+            INSERT INTO budgets
+                (user_id, category_id, budget_name, budget_amount, start_date, end_date)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            """,
+            (
+                budget.user_id,
+                budget.category_id,
+                budget_name,
+                budget.budget_amount,
+                budget.start_date,
+                budget.end_date,
+            ),
+        )
+        budget_id = cursor.lastrowid
+        conn.commit()
+        cursor.execute(
+            """
+            SELECT budget_id, user_id, category_id, budget_name, budget_amount,
+                   start_date, end_date, created_at
+            FROM budgets
+            WHERE budget_id = %s AND user_id = %s
+            """,
+            (budget_id, budget.user_id),
+        )
+        created_budget = cursor.fetchone()
+        if created_budget is None:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Budget was saved but could not be loaded.",
+            )
+        return created_budget
+    finally:
+        cursor.close()
+        conn.close()
+
 
 @app.post("/checkCredentials")
 def checkAccount(credentials: LoginRequest):
@@ -176,7 +255,8 @@ def getResources(user_id: int):
                         'budget_name', budget_name,
                         'budget_amount', budget_amount,
                         'start_date', start_date,
-                        'end_date', end_date
+                        'end_date', end_date,
+                        'created_at', created_at
                     )
                 ), ''), ']') AS budgets
             FROM budgets
@@ -340,7 +420,6 @@ def transactionFilter(user_id: int,transaction_type: str):
 def transactionFilter(user_id: int,):
     conn = get_connected()
     cursor = conn.cursor(dictionary=True)
-
     try:
         cursor.execute(
               """
