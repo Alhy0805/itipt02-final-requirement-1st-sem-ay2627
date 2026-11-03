@@ -1,26 +1,158 @@
 <ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">dashboard</ion-title>
-    </ion-toolbar>
-  </ion-header>
-
   <section class="dashboard-content">
-    <div class="dashboard-time">
-      <div class="dashboard-greet">
-        <h1>Good Afternoon, {{ user?.full_name }}</h1>
-        <h3>Here's your financial for October 2026</h3>
-      </div>
-    </div>
-    <div class="dashboard-quick-report">
-      <div class="total-balance-container">
-        <div class="total-balance-icon"></div>
-        <div class="total-balance-content">
-          <p>Total Balance</p>
-          <h1>P{{ totalBalance | number:'1.2-2' }}</h1>
-          <p><span>12%</span>from last month</p>
+    <div class="dashboard-left">
+      <div class="dashboard-time">
+        <div class="dashboard-greet">
+          <h1>{{ greeting }}, {{ user?.full_name }}!</h1>
+          <h3>Here's your financial for {{ currentMonth }} {{ currentYear }}</h3>
         </div>
       </div>
+      <div class="dashboard-quick-report">
+        <ion-card class="report-card balance-card">
+          <ion-card-content>
+            <div class="report-icon"><ion-icon name="wallet-outline" aria-hidden="true"></ion-icon></div>
+            <div class="report-details">
+              <p>Balance</p>
+              <h2>P{{ totalBalance | number:'1.2-2' }}</h2>
+            </div>
+          </ion-card-content>
+        </ion-card>
+
+        <ion-card class="report-card income-card">
+          <ion-card-content>
+            <div class="report-icon"><ion-icon name="trending-up-outline" aria-hidden="true"></ion-icon></div>
+            <div class="report-details">
+              <p>Income</p>
+              <h2>P{{ totalIncome | number:'1.2-2' }}</h2>
+            </div>
+          </ion-card-content>
+        </ion-card>
+
+        <ion-card class="report-card expenses-card">
+          <ion-card-content>
+            <div class="report-icon"><ion-icon name="trending-down-outline" aria-hidden="true"></ion-icon></div>
+            <div class="report-details">
+              <p>Expenses</p>
+              <h2>P{{ totalExpenses | number:'1.2-2' }}</h2>
+            </div>
+          </ion-card-content>
+        </ion-card>
+
+        <ion-card class="report-card remaining-budget-card">
+          <ion-card-content>
+            <div class="report-icon"><ion-icon name="pie-chart-outline" aria-hidden="true"></ion-icon></div>
+            <div class="report-details">
+              <p>Remaining Budget</p>
+              <h2>P{{ totalRemainingBudget | number:'1.2-2' }}</h2>
+            </div>
+          </ion-card-content>
+        </ion-card>
+      </div>
+
+      <div class="dashboard-lower-cards">
+        <ion-card class="recent-transactions-card">
+          <ion-card-header class="dashboard-card-header">
+            <ion-card-title>Recent Transactions</ion-card-title>
+            <ion-button class="view-all-button" fill="solid" size="small" routerLink="/finance/transactions">
+              View All
+            </ion-button>
+          </ion-card-header>
+          <ion-list>
+            <ion-item *ngFor="let transaction of recentTransactions">
+              <ion-label>
+                <h3>{{ transaction.description }}</h3>
+                <p>
+                  <span
+                    [class.income-amount]="transaction.transaction_type === 'Income'"
+                    [class.expense-amount]="transaction.transaction_type === 'Expense'"
+                    >{{ transaction.transaction_type }}</span
+                  >
+                  · {{ transaction.transaction_date | date:'mediumDate' }}
+                </p>
+              </ion-label>
+              <ion-note
+                slot="end"
+                [class.income-amount]="transaction.transaction_type === 'Income'"
+                [class.expense-amount]="transaction.transaction_type === 'Expense'"
+              >
+                ₱{{ transaction.amount | number:'1.2-2' }}
+              </ion-note>
+            </ion-item>
+            <ion-item *ngIf="recentTransactions.length === 0">
+              <ion-label>No transactions yet.</ion-label>
+            </ion-item>
+          </ion-list>
+        </ion-card>
+
+        <ion-card class="monthly-budgets-card">
+          <ion-card-header class="dashboard-card-header">
+            <ion-card-title>This Month's Budget</ion-card-title>
+            <ion-button class="view-all-button" fill="solid" size="small" routerLink="/finance/budgets">
+              View All
+            </ion-button>
+          </ion-card-header>
+          <ion-card-content>
+            <div class="monthly-budget" *ngFor="let budget of thisMonthBudgets">
+              <div class="monthly-budget-heading">
+                <strong>{{ budget.budget_name }}</strong>
+                <span>
+                  ₱{{ getBudgetSpent(budget) | number:'1.0-2' }} / ₱{{ budget.budget_amount | number:'1.0-2' }}
+                </span>
+              </div>
+              <ion-progress-bar
+                [value]="getBudgetProgress(budget)"
+                [color]="getBudgetProgress(budget) >= 1 ? 'danger' : 'primary'"
+              ></ion-progress-bar>
+            </div>
+            <p class="empty-budget" *ngIf="thisMonthBudgets.length === 0">No budgets set for this month.</p>
+          </ion-card-content>
+        </ion-card>
+      </div>
+    </div>
+    <div class="dashboard-right">
+      <ion-card class="saving-goals-card">
+        <ion-card-header class="dashboard-card-header">
+          <ion-card-title>Saving Goals</ion-card-title>
+          <ion-button class="view-all-button" fill="solid" size="small" routerLink="/finance/saving-goals">
+            View All
+          </ion-button>
+        </ion-card-header>
+        <ion-card-content>
+          <div class="saving-goal" *ngFor="let goal of savingsGoals | slice: 0 : 3">
+            <div class="saving-goal-heading">
+              <strong>{{ goal.goal_name }}</strong>
+              <span>{{ getGoalProgress(goal) | percent:'1.0-0' }}</span>
+            </div>
+            <p>₱{{ getGoalSavedAmount(goal) | number:'1.0-2' }} saved of ₱{{ goal.target_amount | number:'1.0-2' }}</p>
+            <ion-progress-bar
+              [value]="getGoalProgress(goal)"
+              [color]="getGoalProgress(goal) >= 1 ? 'success' : 'primary'"
+            ></ion-progress-bar>
+          </div>
+          <p class="empty-goals" *ngIf="savingsGoals.length === 0">No saving goals yet.</p>
+        </ion-card-content>
+      </ion-card>
+
+      <ion-card class="upcoming-bills-card">
+        <ion-card-header class="dashboard-card-header">
+          <ion-card-title>Upcoming Bills</ion-card-title>
+          <ion-button class="view-all-button" fill="solid" size="small" routerLink="/finance/recurring-transactions">
+            View All
+          </ion-button>
+        </ion-card-header>
+        <ion-list>
+          <ion-item *ngFor="let bill of upcomingBills">
+            <ion-label>
+              <h3>{{ bill.bill_name }}</h3>
+              <p>Due {{ bill.due_date | date:'mediumDate' }}</p>
+            </ion-label>
+            <ion-note slot="end">₱{{ bill.amount | number:'1.2-2' }}</ion-note>
+          </ion-item>
+          <ion-item *ngIf="upcomingBills.length === 0">
+            <ion-label>No upcoming bills.</ion-label>
+          </ion-item>
+        </ion-list>
+      </ion-card>
     </div>
   </section>
 </ion-content>

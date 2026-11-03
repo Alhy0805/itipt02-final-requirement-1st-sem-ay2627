@@ -1,10 +1,54 @@
-<ion-header>
-  <ion-toolbar>
-    <ion-title>Transactions</ion-title>
-  </ion-toolbar>
-</ion-header>
-
 <ion-content>
   <section class="transactions-content">
+    <ion-card class="list-container">
+      <ion-card-header>
+        <ion-card-title>Transaction List</ion-card-title>
+      </ion-card-header>
+
+      <ion-card-content>
+        <div class="transaction-header">
+          <div class="search">
+            <ion-searchbar></ion-searchbar>
+          </div>
+          <div class="order-control">
+            <ion-icon name="swap-vertical" aria-hidden="true"></ion-icon>
+            <ion-select aria-label="Order transactions" interface="popover" value="new">
+              <ion-select-option value="new">Newest</ion-select-option>
+              <ion-select-option value="old">Oldest</ion-select-option>
+              <ion-select-option value="A-Z">A-Z</ion-select-option>
+              <ion-select-option value="Z-A">Z-A</ion-select-option>
+              <ion-select-option value="highest">Highest</ion-select-option>
+              <ion-select-option value="lowest">Lowest</ion-select-option>
+            </ion-select>
+          </div>
+        </div>
+        <div class="transaction-list">
+          <h1>no transaction</h1>
+        </div>
+      </ion-card-content>
+    </ion-card>
+    <ion-card class="filter-options">
+      <ion-card-header>
+        <ion-card-title>Filter Options</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <div class="filter-container">
+          <ion-list>
+            <ion-list-header>TYPE</ion-list-header>
+            <ion-item>
+              <div class="btn-group">
+                <ion-button class="filter btn active" id="all-btn">ALL</ion-button>
+                <ion-button class="filter btn" id="income">INCOME</ion-button>
+                <ion-button class="filter btn" id="expense">EXPENSE</ion-button>
+              </div>
+            </ion-item>
+            <ion-list-header>DATE</ion-list-header>
+            <ion-item>
+              <ion-input type="month"></ion-input>
+            </ion-item>
+          </ion-list>
+        </div>
+      </ion-card-content>
+    </ion-card>
   </section>
 </ion-content>
