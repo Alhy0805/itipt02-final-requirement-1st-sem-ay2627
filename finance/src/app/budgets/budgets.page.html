@@ -1,13 +1,103 @@
-<ion-header [translucent]="true">
-  <ion-toolbar>
-    <ion-title>budgets</ion-title>
-  </ion-toolbar>
-</ion-header>
+<ion-content [fullscreen]="true" class="budgets-content">
+  <main class="budgets-shell">
+    <section class="page-heading">
+      <div>
+        
+        <h1>Budgets</h1>
+        <p class="page-subtitle">Plan your spending and keep your goals on track.</p>
+      </div>
+      <ion-button class="add-button" (click)="showForm = !showForm" [disabled]="isLoading">
+        <ion-icon name="add-outline" slot="start"></ion-icon>
+        {{ showForm ? 'Close' : 'Add budget' }}
+      </ion-button>
+    </section>
 
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">budgets</ion-title>
-    </ion-toolbar>
-  </ion-header>
+    <p class="error-message" role="alert" *ngIf="errorMessage">{{ errorMessage }}</p>
+
+    <section class="summary-grid" aria-label="Budget summary">
+      <article class="summary-card summary-primary">
+        <div class="summary-icon"><ion-icon name="wallet-outline"></ion-icon></div>
+        <div><span>Total budget</span><strong>₱{{ totalBudget | number:'1.2-2' }}</strong></div>
+      </article>
+      <article class="summary-card summary-green">
+        <div class="summary-icon"><ion-icon name="calendar-outline"></ion-icon></div>
+        <div><span>Active plans</span><strong>{{ budgets.length }}</strong></div>
+      </article>
+      <article class="summary-card summary-purple">
+        <div class="summary-icon"><ion-icon name="trending-up-outline"></ion-icon></div>
+        <div><span>Current period</span><strong>{{ currentPeriod }}</strong></div>
+      </article>
+    </section>
+
+    <ion-card class="budget-form-card" *ngIf="showForm">
+      <ion-card-header>
+        <ion-card-title>Create a budget</ion-card-title>
+        <p>Set an amount and the dates that this budget covers.</p>
+      </ion-card-header>
+      <ion-card-content>
+        <form (ngSubmit)="addBudget()" #budgetForm="ngForm">
+          <div class="form-grid">
+            <label>
+              <span>Budget name</span>
+              <ion-input name="budget_name" [(ngModel)]="newBudget.budget_name" placeholder="e.g. Groceries" required></ion-input>
+            </label>
+            <label>
+              <span>Budget amount</span>
+              <ion-input name="budget_amount" type="number" min="0.01" step="0.01" [(ngModel)]="newBudget.budget_amount" placeholder="0.00" required></ion-input>
+            </label>
+            <label>
+              <span>Category</span>
+              <select class="category-select" name="category_id" [(ngModel)]="newBudget.category_id" required>
+                <option [ngValue]="0" disabled>Select a category</option>
+                <option *ngFor="let category of categories" [ngValue]="category.category_id">{{ category.category_name }}</option>
+              </select>
+            </label>
+            <label>
+              <span>Start date</span>
+              <ion-input name="start_date" type="date" [(ngModel)]="newBudget.start_date" required></ion-input>
+            </label>
+            <label>
+              <span>End date</span>
+              <ion-input name="end_date" type="date" [(ngModel)]="newBudget.end_date" required></ion-input>
+            </label>
+          </div>
+          <div class="form-actions">
+            <ion-button fill="clear" type="button" (click)="resetForm()">Cancel</ion-button>
+            <ion-button type="submit" [disabled]="budgetForm.invalid || isSaving || !categories.length || !newBudget.category_id">
+              {{ isSaving ? 'Saving…' : 'Save budget' }}
+            </ion-button>
+          </div>
+        </form>
+        <p class="form-hint" *ngIf="!isLoading && !categories.length">Create a category before adding a budget.</p>
+      </ion-card-content>
+    </ion-card>
+
+    <ion-card class="budget-list-card">
+      <ion-card-header class="list-heading">
+        <div>
+          <ion-card-title>Your budgets</ion-card-title>
+          <p>{{ budgets.length }} budget{{ budgets.length === 1 ? '' : 's' }} configured</p>
+        </div>
+        <ion-searchbar [(ngModel)]="searchTerm" placeholder="Search budgets" show-clear-button="focus"></ion-searchbar>
+      </ion-card-header>
+
+      <ion-card-content class="table-wrap">
+        <div class="budget-table" role="table" aria-label="Budgets">
+          <div class="table-row table-header" role="row">
+            <span>Budget name</span><span>Category</span><span>Budget amount</span><span>Start date</span><span>End date</span><span>Created at</span>
+          </div>
+          <div class="table-row" role="row" *ngFor="let budget of filteredBudgets">
+            <strong>{{ budget.budget_name }}</strong>
+            <span>{{ getCategoryName(budget.category_id) }}</span>
+            <span class="amount">₱{{ budget.budget_amount | number:'1.2-2' }}</span>
+            <span>{{ budget.start_date | date:'MMM d, y' }}</span>
+            <span>{{ budget.end_date | date:'MMM d, y' }}</span>
+            <span class="muted">{{ budget.created_at | date:'MMM d, y, h:mm a' }}</span>
+          </div>
+          <div class="empty-state" *ngIf="isLoading">Loading budgets…</div>
+          <div class="empty-state" *ngIf="filteredBudgets.length === 0 && !isLoading && !errorMessage">No budgets match your search.</div>
+        </div>
+      </ion-card-content>
+    </ion-card>
+  </main>
 </ion-content>

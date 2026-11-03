@@ -1,90 +1,13 @@
-<ion-content [fullscreen]="true" class="reports-content">
-  <div class="app-shell">
-    <main class="main-content">
-      <header class="topbar">
-        <div>
-          <h1>Reports &amp; Analytics</h1>
-          <p>Monitor your financial performance and spending habits.</p>
-        </div>
-        <div class="topbar-actions">
-          <ion-select label="Period" label-placement="stacked" interface="popover" [(ngModel)]="selectedPeriod" class="period-select">
-            <ion-select-option *ngFor="let period of periods" [value]="period">{{ period }}</ion-select-option>
-          </ion-select>
-          <div class="profile"><ion-icon name="person-circle-outline"></ion-icon><span>Mark Justine Ercilla</span></div>
-        </div>
-      </header>
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-title>reports-and-analytics</ion-title>
+  </ion-toolbar>
+</ion-header>
 
-      <section class="summary-grid">
-        <article class="summary-card income-card">
-          <div><p>Total Income</p><h2>₱20,000.00</h2><small class="positive">↑ 8% from last month</small></div>
-          <span class="metric-icon"><ion-icon name="trending-up-outline"></ion-icon></span>
-        </article>
-        <article class="summary-card expense-card">
-          <div><p>Total Expenses</p><h2>₱5,000.00</h2><small class="negative">↓ 15% from last month</small></div>
-          <span class="metric-icon"><ion-icon name="trending-down-outline"></ion-icon></span>
-        </article>
-        <article class="summary-card savings-card">
-          <div><p>Net Savings</p><h2>₱15,000.00</h2><small class="positive">↑ 12% from last month</small></div>
-          <span class="metric-icon"><ion-icon name="wallet-outline"></ion-icon></span>
-        </article>
-        <article class="summary-card rate-card">
-          <div><p>Savings Rate</p><h2>75%</h2><small class="positive">↑ 5% from last month</small></div>
-          <span class="metric-icon"><ion-icon name="pie-chart-outline"></ion-icon></span>
-        </article>
-      </section>
-
-      <section class="charts-grid">
-        <article class="panel chart-panel">
-          <div class="panel-heading"><h2>Income vs Expenses</h2><span class="subtle-label">{{ selectedPeriod }}</span></div>
-          <div class="chart-wrap"><canvas #incomeExpenseCanvas></canvas></div>
-        </article>
-        <article class="panel chart-panel">
-          <div class="panel-heading"><h2>Spending by Category</h2><button class="text-button" type="button">View All</button></div>
-          <div class="chart-wrap doughnut-wrap"><canvas #categoryCanvas></canvas></div>
-        </article>
-      </section>
-
-      <section class="panel budget-panel">
-        <div class="panel-heading"><h2>Monthly Budget Performance</h2><button class="text-button" type="button">View All</button></div>
-        <div class="budget-list">
-          <div class="budget-item"><div class="budget-label"><strong>Food</strong><span>₱3,000 / ₱5,000 <b>60%</b></span></div><div class="progress"><span style="width: 60%"></span></div></div>
-          <div class="budget-item"><div class="budget-label"><strong>Transportation</strong><span>₱1,500 / ₱2,000 <b>75%</b></span></div><div class="progress blue"><span style="width: 75%"></span></div></div>
-          <div class="budget-item"><div class="budget-label"><strong>Entertainment</strong><span>₱1,200 / ₱1,000 <b class="over-budget">120%</b></span></div><div class="progress red"><span style="width: 100%"></span></div></div>
-          <div class="budget-item"><div class="budget-label"><strong>Bills</strong><span>₱500 / ₱2,000 <b>25%</b></span></div><div class="progress teal"><span style="width: 25%"></span></div></div>
-        </div>
-      </section>
-
-      <section class="panel transactions-panel">
-        <div class="panel-heading transaction-heading">
-          <h2>Transaction Summary</h2>
-          <ion-select aria-label="Filter transactions by category" interface="popover" [(ngModel)]="selectedCategory" class="filter-select">
-            <ion-select-option *ngFor="let category of categories" [value]="category">{{ category === 'All' ? 'All Categories' : category }}</ion-select-option>
-          </ion-select>
-        </div>
-        <div class="table-scroll">
-          <table>
-            <thead><tr><th>Date</th><th>Description</th><th>Category</th><th>Type</th><th class="amount">Amount</th></tr></thead>
-            <tbody>
-              <tr *ngFor="let transaction of filteredTransactions">
-                <td>{{ transaction.date }}</td><td>{{ transaction.description }}</td><td>{{ transaction.category }}</td>
-                <td><span class="type-pill" [class.type-income]="transaction.type === 'Income'" [class.type-expense]="transaction.type === 'Expense'">{{ transaction.type }}</span></td>
-                <td class="amount" [class.positive-text]="transaction.type === 'Income'">{{ transaction.type === 'Income' ? '+' : '-' }}{{ formatCurrency(transaction.amount) }}</td>
-              </tr>
-              <tr *ngIf="filteredTransactions.length === 0"><td colspan="5" class="empty-state">No transactions found in this category.</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <p class="table-footnote">Showing {{ filteredTransactions.length }} of {{ transactions.length }} sample transactions</p>
-      </section>
-
-      <section class="panel export-panel">
-        <div><h2>Export Reports</h2><p>Save or print a copy of your financial report.</p></div>
-        <div class="export-actions">
-          <ion-button (click)="exportCsv()"><ion-icon name="download-outline" slot="start"></ion-icon>Export CSV</ion-button>
-          <ion-button fill="outline" color="medium" (click)="printReport()"><ion-icon name="print-outline" slot="start"></ion-icon>Print / Save PDF</ion-button>
-        </div>
-      </section>
-      <p class="demo-note">Demo interface — figures are sample data. Connect your transaction service to display live financial reports.</p>
-    </main>
-  </div>
+<ion-content [fullscreen]="true">
+  <ion-header collapse="condense">
+    <ion-toolbar>
+      <ion-title size="large">reports-and-analytics</ion-title>
+    </ion-toolbar>
+  </ion-header>
 </ion-content>

@@ -16,13 +16,11 @@ export const routes: Routes = [
   },
   {
     path: 'finance',
-    loadComponent: () =>
-      import('./dashboard/financetracker.page').then((m) => m.FinanceTrackerPage),
+    loadComponent: () => import('./dashboard/financetracker.page').then((m) => m.FinanceTrackerPage),
     children: [
       {
         path: 'dashboard',
-        loadComponent: () =>
-          import('./dashboard/dashboard.page').then((m) => m.DashboardPage),
+        loadComponent: () => import('./dashboard/dashboard.page').then((m) => m.DashboardPage),
       },
       {
         path: 'transactions',
@@ -46,6 +44,11 @@ export const routes: Routes = [
         loadComponent: () => import('./categories/categories.page').then((m) => m.CategoriesPage),
       },
       {
+        path: 'reports-and-analytics',
+        loadComponent: () =>
+          import('./reports-and-analytics/reports-and-analytics.page').then((m) => m.ReportsAndAnalyticsPage),
+      },
+      {
         path: 'budgets',
         loadComponent: () => import('./budgets/budgets.page').then((m) => m.BudgetsPage),
       },
@@ -59,11 +62,6 @@ export const routes: Routes = [
           import('./recurring-transactions/recurring-transactions.page').then((m) => m.RecurringTransactionsPage),
       },
       {
-        path: 'reports-and-analytics',
-        loadComponent: () =>
-          import('./reports-and-analytics/reports-and-analytics.page').then((m) => m.ReportsAndAnalyticsPage),
-      },
-      {
         path: 'notification',
         loadComponent: () => import('./notification/notification.page').then((m) => m.NotificationPage),
       },
@@ -74,5 +72,3 @@ export const routes: Routes = [
     ],
   },
 ];
-
-
