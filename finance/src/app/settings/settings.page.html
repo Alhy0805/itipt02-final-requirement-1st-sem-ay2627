@@ -1,13 +1,146 @@
-<ion-header [translucent]="true">
-  <ion-toolbar>
-    <ion-title>settings</ion-title>
-  </ion-toolbar>
-</ion-header>
+<ion-content [fullscreen]="true" class="settings-content">
+  <div class="settings-page">
+    <header class="page-header">
+      <div>
+        <p class="eyebrow">Preferences</p>
+        <h2>Settings</h2>
+      </div>
+      <ion-button class="save-button" shape="round">Save changes</ion-button>
+    </header>
 
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">settings</ion-title>
-    </ion-toolbar>
-  </ion-header>
+    <div class="settings-grid">
+      <ion-card class="user-card">
+        <ion-card-header>
+          <div class="profile-header">
+            <div class="profile-avatar">ME</div>
+            <div class="profile-copy">
+              <h3>{{ username }}</h3>
+              <p>{{ email }}</p>
+            </div>
+          </div>
+        </ion-card-header>
+
+        <ion-card-content>
+          <div class="profile-stats">
+            <div>
+              <span>Currency</span>
+              <strong>{{ currency }}</strong>
+            </div>
+            <div>
+              <span>Timezone</span>
+              <strong>{{ timeZone }}</strong>
+            </div>
+          </div>
+        </ion-card-content>
+      </ion-card>
+
+      <ion-card class="panel-card">
+        <ion-card-header>
+          <h3>General preferences</h3>
+        </ion-card-header>
+        <ion-card-content>
+          <ion-list lines="none">
+            <ion-item>
+              <ion-icon name="moon-outline" slot="start"></ion-icon>
+              <ion-label>
+                <h4>Dark mode</h4>
+                <p>Use the app in a darker interface.</p>
+              </ion-label>
+              <ion-toggle checked="true" aria-label="Dark mode"></ion-toggle>
+            </ion-item>
+
+            <ion-item>
+              <ion-icon name="cash-outline" slot="start"></ion-icon>
+              <ion-label>
+                <h4>Default currency</h4>
+                <p>{{ currency }}</p>
+              </ion-label>
+              <ion-button fill="clear" size="small">Change</ion-button>
+            </ion-item>
+
+            <ion-item>
+              <ion-icon name="calendar-outline" slot="start"></ion-icon>
+              <ion-label>
+                <h4>Date format</h4>
+                <p>{{ dateFormat }}</p>
+              </ion-label>
+              <ion-button fill="clear" size="small">Edit</ion-button>
+            </ion-item>
+          </ion-list>
+        </ion-card-content>
+      </ion-card>
+
+      <ion-card class="panel-card">
+        <ion-card-header>
+          <h3>Notifications</h3>
+        </ion-card-header>
+        <ion-card-content>
+          <ion-list lines="none">
+            <ion-item>
+              <ion-icon name="notifications-outline" slot="start"></ion-icon>
+              <ion-label>
+                <h4>Budget alerts</h4>
+                <p>Receive alerts when spending reaches a threshold.</p>
+              </ion-label>
+              <ion-toggle checked="true" aria-label="Budget alerts"></ion-toggle>
+            </ion-item>
+
+            <ion-item>
+              <ion-icon name="wallet-outline" slot="start"></ion-icon>
+              <ion-label>
+                <h4>Expense reminders</h4>
+                <p>Get notified before bills and subscriptions renew.</p>
+              </ion-label>
+              <ion-toggle checked="true" aria-label="Expense reminders"></ion-toggle>
+            </ion-item>
+
+            <ion-item>
+              <ion-icon name="mail-outline" slot="start"></ion-icon>
+              <ion-label>
+                <h4>Email summary</h4>
+                <p>Weekly progress recap in your inbox.</p>
+              </ion-label>
+              <ion-toggle aria-label="Email summary"></ion-toggle>
+            </ion-item>
+          </ion-list>
+        </ion-card-content>
+      </ion-card>
+
+      <ion-card class="panel-card">
+        <ion-card-header>
+          <h3>Security & data</h3>
+        </ion-card-header>
+        <ion-card-content>
+          <ion-list lines="none">
+            <ion-item>
+              <ion-icon name="lock-closed-outline" slot="start"></ion-icon>
+              <ion-label>
+                <h4>Biometric login</h4>
+                <p>Use Face ID or fingerprint to unlock the app.</p>
+              </ion-label>
+              <ion-toggle checked="true" aria-label="Biometric login"></ion-toggle>
+            </ion-item>
+
+            <ion-item>
+              <ion-icon name="shield-checkmark-outline" slot="start"></ion-icon>
+              <ion-label>
+                <h4>Two-factor authentication</h4>
+                <p>Extra protection for your account.</p>
+              </ion-label>
+              <ion-button fill="clear" size="small">Enable</ion-button>
+            </ion-item>
+
+            <ion-item>
+              <ion-icon name="cloud-upload-outline" slot="start"></ion-icon>
+              <ion-label>
+                <h4>Backup data</h4>
+                <p>Automatically sync your records to the cloud.</p>
+              </ion-label>
+              <ion-button fill="clear" size="small">Manage</ion-button>
+            </ion-item>
+          </ion-list>
+        </ion-card-content>
+      </ion-card>
+    </div>
+  </div>
 </ion-content>
