@@ -1,47 +1,9 @@
-import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import {
-  IonButton,
-  IonCard,
-  IonCardContent,
-  IonCardHeader,
-  IonContent,
-  IonIcon,
-  IonItem,
-  IonLabel,
-  IonList,
-  IonToggle,
-} from '@ionic/angular';
+import { Component } from '@angular/core';
+import { IonContent, IonHeader, IonTitle, IonToolbar } from '@ionic/angular';
 
 @Component({
   selector: 'app-settings',
-  standalone: true,
   templateUrl: './settings.page.html',
-  styleUrls: ['./settings.page.scss'],
-  imports: [
-    CommonModule,
-    FormsModule,
-    IonButton,
-    IonCard,
-    IonCardContent,
-    IonCardHeader,
-    IonContent,
-    IonIcon,
-    IonItem,
-    IonLabel,
-    IonList,
-    IonToggle,
-  ],
+  imports: [IonContent, IonHeader, IonTitle, IonToolbar],
 })
-export class SettingsPage implements OnInit {
-  username = 'Mark Justin Erciña';
-  email = 'mark@financetracker.app';
-  currency = 'PHP';
-  dateFormat = 'MM/DD/YYYY';
-  timeZone = 'Asia/Manila';
-
-  constructor() {}
-
-  ngOnInit(): void {}
-}
+export class SettingsPage {}
