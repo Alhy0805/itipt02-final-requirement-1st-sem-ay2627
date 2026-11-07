@@ -1,13 +1,77 @@
-<ion-header [translucent]="true">
+<ion-header>
   <ion-toolbar>
-    <ion-title>savingGoals</ion-title>
+    <ion-title>Saving Goals</ion-title>
   </ion-toolbar>
 </ion-header>
 
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">savingGoals</ion-title>
-    </ion-toolbar>
-  </ion-header>
+<ion-content class="saving-goals-content">
+  <main class="saving-goals-page">
+    <div class="page-heading">
+      <h1>My Saving Goals</h1>
+    </div>
+
+    <ion-card class="goal-form-card">
+      <ion-card-header>
+        <ion-card-title>Add a Goal</ion-card-title>
+      </ion-card-header>
+
+      <ion-card-content>
+        <form (ngSubmit)="addGoal()" #goalForm="ngForm">
+          <ion-item>
+            <ion-label position="stacked">Goal Name</ion-label>
+            <ion-input
+              [(ngModel)]="newGoal.goal_name"
+              name="goal_name"
+              type="text"
+              placeholder="Example: New Laptop"
+              required
+            ></ion-input>
+          </ion-item>
+
+          <ion-item>
+            <ion-label position="stacked">Target Amount</ion-label>
+            <ion-input
+              [(ngModel)]="newGoal.target_amount"
+              name="target_amount"
+              type="number"
+              min="0.01"
+              step="0.01"
+              placeholder="0.00"
+              required
+            ></ion-input>
+          </ion-item>
+
+          <ion-item>
+            <ion-label position="stacked">Target Date</ion-label>
+            <ion-input [(ngModel)]="newGoal.target_date" name="target_date" type="date"></ion-input>
+          </ion-item>
+
+          <ion-button type="submit" expand="block" [disabled]="goalForm.invalid">Save Goal</ion-button>
+        </form>
+      </ion-card-content>
+    </ion-card>
+
+    <ion-card class="goal-list-card">
+      <ion-card-header>
+        <ion-card-title>Saved Goals</ion-card-title>
+      </ion-card-header>
+
+      <ion-list lines="full">
+        <ion-item *ngFor="let goal of goals">
+          <ion-label>
+            <h2>{{ goal.goal_name }}</h2>
+            <p>Target: {{ goal.target_amount | currency: 'PHP' : 'symbol' : '1.2-2' }}</p>
+            <p>Saved: {{ getSavedAmount(goal) | currency: 'PHP' : 'symbol' : '1.2-2' }}</p>
+            <p>Target Date: {{ goal.target_date | date: 'mediumDate' }}</p>
+          </ion-label>
+
+          <ion-button slot="end" fill="clear" color="danger" (click)="deleteGoal(goal)">Delete</ion-button>
+        </ion-item>
+
+        <ion-item *ngIf="goals.length === 0">
+          <ion-label>No saving goals yet.</ion-label>
+        </ion-item>
+      </ion-list>
+    </ion-card>
+  </main>
 </ion-content>
