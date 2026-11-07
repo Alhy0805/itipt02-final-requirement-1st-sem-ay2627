@@ -20,9 +20,9 @@
             <ion-select
               aria-label="Order transactions"
               interface="popover"
-              value="new"
+              [value]="transaction_type"
               id="order-select"
-              (ionChange)="transaction_type = $event.detail.value"
+              (ionChange)="orderTransactions($event.detail.value)"
             >
               <ion-select-option value="new">Newest</ion-select-option>
               <ion-select-option value="old">Oldest</ion-select-option>

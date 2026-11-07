@@ -1,7 +1,7 @@
 from datetime import date
 from decimal import Decimal
 
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, HTTPException, status, Response
 from pydantic import BaseModel, Field
 from fastapi.middleware.cors import CORSMiddleware
 import hmac
@@ -413,6 +413,135 @@ def transactionFilter(user_id: int,):
     finally:
           cursor.close()
           conn.close()
+
+@app.get("/transactionFilter/{user_id}/{transaction_type}")
+def transactionFilter(user_id: int,transaction_type: str,):
+    conn = get_connected()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute(
+              """
+              SELECT transaction_type, amount, description,
+                     transaction_date, notes
+              FROM transactions
+              WHERE user_id = %s AND transaction_type = %s
+              """,
+              (user_id,transaction_type),
+          )
+        return cursor.fetchall()
+    finally:
+          cursor.close()
+          conn.close()
+
+##for date asc and desc 
+@app.get("/transactionFilter/{user_id}/{isorder}/{order}")
+def transactionFilter(user_id: int,isorder: bool,order: str):
+    conn = get_connected()
+    cursor = conn.cursor(dictionary=True)
+    
+    if (isorder == True and order =="oldest"):
+        try:
+        
+            cursor.execute(
+              """
+              SELECT transaction_type, amount, description,
+                     transaction_date, notes
+              FROM transactions
+              WHERE user_id = %s 
+              ORDER by transaction_date ASC
+              """,
+              (user_id,),
+          )
+            return cursor.fetchall()
+        finally:
+          cursor.close()
+          conn.close()
+
+
+    elif (isorder == True and order =="newest"):
+            try:
+            
+                cursor.execute(
+                  """
+                  SELECT transaction_type, amount, description,
+                         transaction_date, notes
+                  FROM transactions
+                  WHERE user_id = %s 
+                  ORDER by transaction_date DESC
+                  """,
+                  (user_id,),
+              )
+                return cursor.fetchall()
+            finally:
+              cursor.close()
+              conn.close()
+    elif (isorder == True and order =="a-z"):
+            try:
+            
+                cursor.execute(
+                  """
+                  SELECT transaction_type, amount, description,
+                         transaction_date, notes
+                  FROM transactions
+                  WHERE user_id = %s 
+                  ORDER by description ASC
+                  """,
+                  (user_id,),
+              )
+                return cursor.fetchall()
+            finally:
+              cursor.close()
+              conn.close()
+    elif (isorder == True and order =="z-a"):
+            try:
+                cursor.execute(
+                    """
+                    SELECT transaction_type, amount, description,
+                           transaction_date, notes
+                    FROM transactions
+                    WHERE user_id = %s 
+                    ORDER by description DESC
+                    """,
+                    (user_id,),
+                )
+                return cursor.fetchall()
+            finally:
+                  cursor.close()
+                  conn.close()
+    elif (isorder == True and order =="highest"):
+            try:         
+                cursor.execute(
+                    """
+                    SELECT transaction_type, amount, description,
+                           transaction_date, notes
+                    FROM transactions
+                    WHERE user_id = %s 
+                    ORDER by amount DESC
+                    """,
+                    (user_id,),
+                )
+                return cursor.fetchall()
+            finally:
+                cursor.close()
+                conn.close()
+    elif (isorder == True and order =="lowest"):
+            try:
+            
+                cursor.execute(
+                    """
+                    SELECT transaction_type, amount, description,
+                           transaction_date, notes
+                    FROM transactions
+                    WHERE user_id = %s 
+                    ORDER by amount ASC
+                    """,
+                    (user_id,),
+                )
+                return cursor.fetchall()
+            finally:
+                cursor.close()
+                conn.close()
+    else: return "Invalid API"
 @app.get("/budget/{user_id}")
 def budget(user_id: int,):
     conn = get_connected()
@@ -430,3 +559,6 @@ def budget(user_id: int,):
     finally:
           cursor.close()
           conn.close()
+@app.get("/.well-known/appspecific/com.chrome.devtools.json")
+async def chrome_devtools():
+    return Response(status_code=204)

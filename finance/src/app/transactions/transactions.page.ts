@@ -13,6 +13,17 @@ interface Transaction {
   notes: string | null;
 }
 
+type TransactionOrder = 'new' | 'old' | 'A-Z' | 'Z-A' | 'highest' | 'lowest';
+
+const ORDER_API_VALUES: Record<TransactionOrder, string> = {
+  new: 'newest',
+  old: 'oldest',
+  'A-Z': 'a-z',
+  'Z-A': 'z-a',
+  highest: 'highest',
+  lowest: 'lowest',
+};
+
 @Component({
   selector: 'app-transactions',
   templateUrl: './transactions.page.html',
@@ -24,7 +35,7 @@ export class TransactionsPage implements OnInit {
   userID: string | null = null;
   transaction: Transaction[] = [];
   transactionAPI = '';
-  transaction_type = 'new';
+  transaction_type: TransactionOrder = 'new';
   activeFilter = 'allBtn';
   loadError = '';
   isLoading = false;
@@ -36,10 +47,10 @@ export class TransactionsPage implements OnInit {
   ngOnInit(): void {
     const savedUser = localStorage.getItem('finance-user');
     this.user = savedUser ? JSON.parse(savedUser) : null;
-    this.userID = this.user.user_id;
+    this.userID = this.user?.user_id ?? null;
 
     if (this.userID) {
-      this.filterTransactions('allBtn');
+      void this.orderTransactions('new');
     } else {
       this.loadError = 'Could not find a user ID. Please sign in again.';
     }
@@ -55,18 +66,11 @@ export class TransactionsPage implements OnInit {
     this.loadError = '';
     this.isLoading = true;
 
-    let type: string | null = null;
-    if (buttonId === 'incomebtn') {
-      type = 'Income';
-    } else if (buttonId === 'expenseBtn') {
-      type = 'Expense';
-    }
-
-    if (type !== null) {
-      this.transactionAPI = `http://127.0.0.1:8000/transactionFilter/${this.userID}/${type}`;
-    } else {
-      this.transactionAPI = `http://127.0.0.1:8000/transactionFilter/${this.userID}`;
-    }
+    const type =
+      buttonId === 'incomebtn' ? 'Income' : buttonId === 'expenseBtn' ? 'Expense' : null;
+    this.transactionAPI = type
+      ? `http://127.0.0.1:8000/transactionFilter/${this.userID}/${type}`
+      : `http://127.0.0.1:8000/transactionFilter/${this.userID}`;
 
     try {
       const response = await fetch(this.transactionAPI);
@@ -74,13 +78,79 @@ export class TransactionsPage implements OnInit {
         throw new Error(`Request failed: ${response.status}`);
       }
 
-      this.transaction = await response.json();
+      const transactions: Transaction[] = await response.json();
+      this.transaction = this.sortTransactions(transactions);
     } catch (error) {
       this.loadError = error instanceof Error ? error.message : 'Could not load transactions.';
       console.error('Failed to load transactions:', error);
     } finally {
       this.isLoading = false;
       this.changeDetector.detectChanges();
+    }
+  }
+
+  async orderTransactions(order: TransactionOrder): Promise<void> {
+    this.transaction_type = order;
+    if (!this.userID) {
+      this.loadError = 'Could not find a user ID. Please sign in again.';
+      return;
+    }
+
+    this.loadError = '';
+    this.isLoading = true;
+    this.transactionAPI = `http://127.0.0.1:8000/transactionFilter/${this.userID}/true/${ORDER_API_VALUES[order]}`;
+
+    try {
+      const response = await fetch(this.transactionAPI);
+      if (!response.ok) {
+        throw new Error(`Request failed: ${response.status}`);
+      }
+
+      const transactions: Transaction[] = await response.json();
+      const type =
+        this.activeFilter === 'incomebtn'
+          ? 'Income'
+          : this.activeFilter === 'expenseBtn'
+            ? 'Expense'
+            : null;
+      this.transaction = type
+        ? transactions.filter((item) => item.transaction_type === type)
+        : transactions;
+    } catch (error) {
+      this.loadError = error instanceof Error ? error.message : 'Could not load transactions.';
+      console.error('Failed to order transactions:', error);
+    } finally {
+      this.isLoading = false;
+      this.changeDetector.detectChanges();
+    }
+  }
+
+  private sortTransactions(transactions: Transaction[]): Transaction[] {
+    const sortedTransactions = [...transactions];
+
+    switch (this.transaction_type) {
+      case 'new':
+        return sortedTransactions.sort(
+          (first, second) =>
+            new Date(second.transaction_date).getTime() - new Date(first.transaction_date).getTime(),
+        );
+      case 'old':
+        return sortedTransactions.sort(
+          (first, second) =>
+            new Date(first.transaction_date).getTime() - new Date(second.transaction_date).getTime(),
+        );
+      case 'A-Z':
+        return sortedTransactions.sort((first, second) =>
+          first.description.localeCompare(second.description),
+        );
+      case 'Z-A':
+        return sortedTransactions.sort((first, second) =>
+          second.description.localeCompare(first.description),
+        );
+      case 'highest':
+        return sortedTransactions.sort((first, second) => second.amount - first.amount);
+      case 'lowest':
+        return sortedTransactions.sort((first, second) => first.amount - second.amount);
     }
   }
 }
