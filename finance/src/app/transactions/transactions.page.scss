@@ -1,64 +1,105 @@
-.transaction-header{
-    display: flex;
-    flex-direction: column;
+.transaction-header {
+  display: flex;
+  flex-direction: column;
 }
-.search{
-    margin: 0;
-    display: flex;
-    flex: 1;
+.search {
+  margin: 0;
+  display: flex;
+  flex: 1;
+  min-width: 0;
 }
-.order-control{
-    display: flex;
-    align-items: center;
-    gap: 8px;
+.search ion-searchbar {
+  flex: 1 1 auto;
+  min-width: 0;
 }
-.order-control ion-icon{
-    font-size: 20px;
+.order-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
-.filter-container{
-    padding-left: 5px;
-    display: flex;
-    flex: 1;
+.order-control ion-icon {
+  font-size: 20px;
 }
-
-.filter-date{
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    width: 150px;
-    text-align: center;
-}
-.filter{
-    width: 120px;
-}
-.filter.btn{
-    --background: var(--primary-light);
-    --padding-top: 0;
-    --padding-bottom: 0;
-    --padding-start: 0;
-    --padding-end: 0;
-    font-size: 0.60rem;
-    color: var(--text-primary);
-    height: 20px;
-}
-.filter.order{
-    border-radius: 8px;
-    border: 1px solid #ccc;
-
+.filter-container {
+  padding-left: 5px;
+  display: flex;
+  flex: 1;
 }
 
-.filter.btn.active{
-    --background: var(--primary);
-    color: var(--primary-light);
+.filter-date {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  width: 150px;
+  text-align: center;
+}
+.filter {
+  width: 120px;
+}
+.filter.btn {
+  flex: 1 1 0;
+  width: auto;
+  min-width: 0;
+  margin: 0;
+  --background: transparent;
+  --background-hover: var(--control-hover);
+  --background-activated: var(--control-active);
+  --border-radius: 8px;
+  --box-shadow: none;
+  --color: var(--text-muted);
+  --padding-start: clamp(8px, 1vw, 14px);
+  --padding-end: clamp(8px, 1vw, 14px);
+  font-size: clamp(0.7rem, 0.9vw, 0.8rem);
+  font-weight: 650;
+  letter-spacing: 0.025em;
+  min-height: 36px;
+  height: auto;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease;
+}
+.filter.order {
+  border-radius: 8px;
+  border: 1px solid var(--border);
 }
 
-.transactions-content{
-    display: flex;
-    align-items: flex-start;
+.filter.btn.active {
+  --background: var(--primary);
+  --background-hover: var(--primary);
+  --background-activated: var(--primary);
+  --box-shadow: var(--shadow-active);
+  --color: var(--text-on-primary);
+}
+
+.transactions-content {
+  display: flex;
+  align-items: flex-start;
+  height: 100%;
+  min-height: 0;
 }
 
 .list-container {
   flex: 2 1 0;
   min-width: 0;
+  height: calc(100% - 40px);
+  min-height: 0;
+  margin: 20px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.list-container ion-card-content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.transaction-list {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
 }
 
 .filter-options {
@@ -67,72 +108,130 @@
 }
 
 .btn-group {
-    justify-content: center;
-    display: flex;
-    overflow: hidden;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 3px;
+  flex: 0 1 clamp(260px, 30vw, 360px);
+  min-width: 0;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-subtle);
+}
+
+@media (max-width: 600px) {
+  .search {
     flex-wrap: wrap;
+  }
+
+  .search ion-searchbar,
+  .btn-group {
+    flex: 1 1 100%;
+  }
+}
+
+.table-container {
+  width: 100%;
+  overflow: visible;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
 }
 
 .transaction-table {
-    width: 100%;
-    min-width: 720px;
-    border-collapse: collapse;
-}
-
-.transaction-list {
-    width: 100%;
-    overflow-x: auto;
-}
-
-.transaction-list p {
-    text-align: center;
+  width: 100%;
+  min-width: 520px;
+  border-collapse: separate;
+  border-spacing: 0;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
 }
 
 .transaction-table th,
 .transaction-table td {
-    padding: 12px 8px;
-    text-align: center;
-    vertical-align: middle;
+  padding: 14px 18px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-muted);
 }
 
 .transaction-table th {
-    font-weight: 600;
-    white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--surface-subtle);
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .transaction-table tbody tr {
-    border-bottom: 1px solid var(--ion-color-light, #e5e7eb);
+  transition: background-color 150ms ease;
 }
 
-.transaction-table tbody tr:last-child {
-    border-bottom: 0;
+.transaction-table tbody tr:hover {
+  background: var(--surface-hover);
 }
 
-.transaction-table .notes-cell {
-    min-width: 180px;
-    max-width: 280px;
-    white-space: normal;
-    overflow-wrap: anywhere;
-    color: var(--ion-color-medium, #6b7280);
-    line-height: 1.4;
+.transaction-table tbody tr:last-child td {
+  border-bottom: 0;
 }
 
-.transaction-table .notes-cell span {
-    display: block;
-    max-height: 4.2em;
-    overflow: hidden;
+.transaction-table .description-cell {
+  color: var(--text-primary);
+  font-weight: 600;
 }
 
-.transaction-table .action-cell {
-    white-space: nowrap;
+.transaction-table .amount-cell {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
+  white-space: nowrap;
 }
 
-.transaction-table .action-cell ion-button {
-    margin: 0 2px;
-    --padding-start: 8px;
-    --padding-end: 8px;
+.transaction-table th.amount-cell {
+  text-align: right;
 }
 
-.transaction-table .action-cell ion-icon {
-    font-size: 18px;
+.transaction-type {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 4px 10px;
+  background: var(--neutral-bg);
+  color: var(--text-neutral);
+  font-size: 0.75rem;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.transaction-type.income {
+  background: var(--income-bg);
+  color: var(--income);
+}
+
+.transaction-type.expense {
+  background: var(--expense-bg);
+  color: var(--expense);
+}
+
+.transaction-table .date-cell {
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .transaction-table th,
+  .transaction-table td {
+    padding: 12px;
+  }
+
+  .transaction-table {
+    font-size: 0.82rem;
+  }
 }

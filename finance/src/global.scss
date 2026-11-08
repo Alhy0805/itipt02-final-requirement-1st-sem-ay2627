@@ -49,12 +49,24 @@
   /* Backgrounds */
   --background: #F8FAFC;
   --surface: #FFFFFF;
+  --surface-subtle: #F5F8FC;
+  --surface-hover: #F8FBFF;
   --border: #E2E8F0;
+  --border-muted: #EDF1F5;
+  --control-hover: #E8EDF4;
+  --control-active: #E2E8F0;
+  --neutral-bg: #EEF2F7;
 
   /* Text */
   --text-primary: #0F172A;
   --text-secondary: #334155;
   --text-muted: #64748B;
+  --text-on-primary: #FFFFFF;
+  --text-neutral: #526174;
+
+  /* Shadows */
+  --shadow-card: 0 4px 16px rgb(22 34 51 / 5%);
+  --shadow-active: 0 2px 6px rgb(22 34 51 / 14%);
 
   /* Financial Status */
   --balance: #2563EB;
