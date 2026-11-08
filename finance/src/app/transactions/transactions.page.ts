@@ -1,26 +1,30 @@
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, inject, ViewChild } from '@angular/core';
-import type { ElementRef, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
-  IonButton,
+  IonIcon,
+  IonContent,
   IonCard,
-  IonCardContent,
   IonCardHeader,
   IonCardTitle,
-  IonContent,
-  IonIcon,
+  IonCardContent,
+  IonInput,
   IonSearchbar,
+  IonButton,
+  IonDatetime,
+  IonItem,
   IonSelect,
   IonSelectOption,
+  IonList,
+  IonHeader,
+  IonListHeader,
 } from '@ionic/angular';
-import { ArcElement, Chart, Legend, PieController, Tooltip } from 'chart.js';
 import { addIcons } from 'ionicons';
-import { archiveOutline, createOutline, ellipsisVertical, searchCircle, swapVertical } from 'ionicons/icons';
+import { ellipsisVertical, searchCircle, swapVertical } from 'ionicons/icons';
 
 interface Transaction {
   transaction_type: string;
-  amount: number | string;
+  amount: number;
   description: string;
   transaction_date: string;
   notes: string | null;
@@ -42,86 +46,52 @@ const ORDER_API_VALUES: Record<TransactionOrder, string> = {
   templateUrl: './transactions.page.html',
   styleUrls: ['./transactions.page.scss'],
   imports: [
+    IonIcon,
+    IonInput,
+    IonContent,
     CommonModule,
     FormsModule,
-    IonButton,
     IonCard,
-    IonCardContent,
     IonCardHeader,
     IonCardTitle,
-    IonContent,
-    IonIcon,
+    IonCardContent,
     IonSearchbar,
+    IonButton,
+    IonDatetime,
+    IonItem,
     IonSelect,
     IonSelectOption,
+    IonList,
+    IonHeader,
+    IonListHeader,
   ],
 })
-export class TransactionsPage implements OnInit, OnDestroy {
-  private readonly changeDetector = inject(ChangeDetectorRef);
+export class TransactionsPage implements OnInit {
   user: any = null;
   userID: string | null = null;
   transaction: Transaction[] = [];
-  private summaryTransactions: Transaction[] = [];
-  private typeChart?: Chart<'pie', number[], string>;
-  private readonly chartColors = ['#2679e8', '#e64b66', '#8d4ed8', '#17a879', '#e58a31', '#4b647e'];
   transactionAPI = '';
   transaction_type: TransactionOrder = 'new';
   activeFilter = 'allBtn';
   searchTerm = '';
   loadError = '';
   isLoading = false;
-  private requestSequence = 0;
 
-  constructor() {
-    addIcons({ archiveOutline, createOutline, ellipsisVertical, searchCircle, swapVertical });
-    Chart.register(PieController, ArcElement, Tooltip, Legend);
-  }
-
-  @ViewChild('transactionTypeChart')
-  set transactionTypeChartElement(element: ElementRef<HTMLCanvasElement> | undefined) {
-    if (!element) {
-      this.typeChart?.destroy();
-      this.typeChart = undefined;
-      return;
-    }
-
-    this.typeChart = new Chart<'pie', number[], string>(element.nativeElement, {
-      type: 'pie',
-      data: {
-        labels: [],
-        datasets: [{ data: [], backgroundColor: [], borderColor: '#ffffff', borderWidth: 3, hoverOffset: 7 }],
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            callbacks: {
-              label: (context) => {
-                const total = this.transactionTypeTotals[context.dataIndex];
-                return total ? `${total.type}: ${this.formatCurrency(total.amount)} (${total.count})` : '';
-              },
-            },
-          },
-        },
-      },
-    });
-    this.updateTypeChart();
-  }
-
-  ngOnDestroy(): void {
-    this.typeChart?.destroy();
-    this.typeChart = undefined;
+  constructor(readonly changeDetector: ChangeDetectorRef) {
+    addIcons({ ellipsisVertical, searchCircle, swapVertical });
   }
 
   ngOnInit(): void {
     const savedUser = localStorage.getItem('finance-user');
-    this.user = savedUser ? JSON.parse(savedUser) : null;
-    this.userID = this.user?.user_id ?? null;
+    if (savedUser) {
+      this.user = JSON.parse(savedUser);
+    } else {
+      this.user = null;
+    }
+    this.userID = this.user.user_id;
 
     if (this.userID) {
-      void this.orderTransactions('new');
+      this.filterTransactions('allBtn');
     } else {
       this.loadError = 'Could not find a user ID. Please sign in again.';
     }
@@ -132,62 +102,40 @@ export class TransactionsPage implements OnInit, OnDestroy {
     await this.loadTransactions();
   }
 
+  async searchTransactions(value: string | null | undefined): Promise<void> {
+    if (value !== null && value !== undefined) {
+      this.searchTerm = value;
+    } else {
+      this.searchTerm = '';
+    }
+    await this.loadTransactions();
+  }
+
   async orderTransactions(order: TransactionOrder): Promise<void> {
     this.transaction_type = order;
     await this.loadTransactions();
   }
 
-  async searchTransactions(): Promise<void> {
-    await this.loadTransactions();
-  }
-
-  get transactionTypeTotals(): { type: string; amount: number; count: number }[] {
-    const totals = new Map<string, { type: string; amount: number; count: number }>();
-    for (const item of this.summaryTransactions) {
-      const current = totals.get(item.transaction_type) ?? {
-        type: item.transaction_type,
-        amount: 0,
-        count: 0,
-      };
-      current.amount += Number(item.amount) || 0;
-      current.count += 1;
-      totals.set(item.transaction_type, current);
-    }
-    return [...totals.values()].sort((first, second) => first.type.localeCompare(second.type));
-  }
-
-  get totalTransactionAmount(): number {
-    return this.transactionTypeTotals.reduce((total, item) => total + item.amount, 0);
-  }
-
-  getTransactionTypeColor(index: number): string {
-    return this.chartColors[index % this.chartColors.length];
-  }
-
-  updateTypeChart(): void {
-    if (!this.typeChart) return;
-    const totals = this.transactionTypeTotals;
-    this.typeChart.data.labels = totals.map((item) => item.type);
-    this.typeChart.data.datasets[0].data = totals.map((item) => item.amount);
-    this.typeChart.data.datasets[0].backgroundColor = totals.map((_, index) => this.getTransactionTypeColor(index));
-    this.typeChart.update('none');
-  }
-
-  private async loadTransactions(): Promise<void> {
+  async loadTransactions(): Promise<void> {
     if (!this.userID) {
       this.loadError = 'Could not find a user ID. Please sign in again.';
       return;
     }
 
-    const requestSequence = ++this.requestSequence;
     this.loadError = '';
     this.isLoading = true;
-    const searchTerm = this.searchTerm.trim();
-    const transactionType =
-      this.activeFilter === 'incomebtn' ? 'Income' : this.activeFilter === 'expenseBtn' ? 'Expense' : null;
 
-    if (searchTerm) {
-      this.transactionAPI = `http://127.0.0.1:8000/transactionSearch/${this.userID}?search_term=${encodeURIComponent(searchTerm)}`;
+    let type: string | null = null;
+    if (this.activeFilter === 'incomebtn') {
+      type = 'Income';
+    } else if (this.activeFilter === 'expenseBtn') {
+      type = 'Expense';
+    }
+
+    const term = this.searchTerm.trim();
+    if (term) {
+      const params = new URLSearchParams({ search_term: term });
+      this.transactionAPI = `http://127.0.0.1:8000/transactionSearch/${this.userID}?${params}`;
     } else {
       this.transactionAPI = `http://127.0.0.1:8000/transactionFilter/${this.userID}/true/${ORDER_API_VALUES[this.transaction_type]}`;
     }
@@ -199,27 +147,28 @@ export class TransactionsPage implements OnInit, OnDestroy {
       }
 
       const transactions: Transaction[] = await response.json();
-      if (requestSequence !== this.requestSequence) return;
-      this.summaryTransactions = transactions;
-      const filteredTransactions = transactionType
-        ? transactions.filter((item) => item.transaction_type === transactionType)
-        : transactions;
+
+      let filteredTransactions: Transaction[];
+
+      if (type) {
+        filteredTransactions = transactions.filter((item) => {
+          return item.transaction_type === type;
+        });
+      } else {
+        filteredTransactions = transactions;
+      }
+
       this.transaction = this.sortTransactions(filteredTransactions);
-      this.updateTypeChart();
     } catch (error) {
-      if (requestSequence === this.requestSequence) {
-        this.loadError = error instanceof Error ? error.message : 'Could not load transactions.';
-        console.error('Failed to load transactions:', error);
-      }
+      this.loadError = error instanceof Error ? error.message : 'Could not load transactions.';
+      console.error('Failed to load transactions:', error);
     } finally {
-      if (requestSequence === this.requestSequence) {
-        this.isLoading = false;
-        this.changeDetector.detectChanges();
-      }
+      this.isLoading = false;
+      this.changeDetector.detectChanges();
     }
   }
 
-  private sortTransactions(transactions: Transaction[]): Transaction[] {
+  sortTransactions(transactions: Transaction[]): Transaction[] {
     const sortedTransactions = [...transactions];
 
     switch (this.transaction_type) {
@@ -240,9 +189,5 @@ export class TransactionsPage implements OnInit, OnDestroy {
       case 'lowest':
         return sortedTransactions.sort((first, second) => Number(first.amount) - Number(second.amount));
     }
-  }
-
-  private formatCurrency(amount: number): string {
-    return new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(amount);
   }
 }
