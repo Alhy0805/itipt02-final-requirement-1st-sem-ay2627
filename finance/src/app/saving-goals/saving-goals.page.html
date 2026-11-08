@@ -43,10 +43,19 @@
 
           <ion-item>
             <ion-label position="stacked">Target Date</ion-label>
-            <ion-input [(ngModel)]="newGoal.target_date" name="target_date" type="date"></ion-input>
+            <ion-input 
+              [(ngModel)]="newGoal.target_date" 
+              name="target_date" 
+              type="date">
+            </ion-input>
           </ion-item>
 
-          <ion-button type="submit" expand="block" [disabled]="goalForm.invalid">Save Goal</ion-button>
+          <ion-button 
+              type="submit" 
+              expand="block" 
+              [disabled]="goalForm.invalid">
+              Save Goal
+          </ion-button>
         </form>
       </ion-card-content>
     </ion-card>
