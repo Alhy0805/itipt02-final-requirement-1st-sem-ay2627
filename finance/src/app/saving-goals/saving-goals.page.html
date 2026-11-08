@@ -68,7 +68,7 @@
       <ion-list lines="full">
         <ion-item *ngFor="let goal of goals">
           <ion-label>
-            <h2>{{ goal.goal_name }}</h2>
+            <h1>{{ goal.goal_name }}</h1>
             <p>Target: {{ goal.target_amount | currency: 'PHP' : 'symbol' : '1.2-2' }}</p>
             <p>Saved: {{ getSavedAmount(goal) | currency: 'PHP' : 'symbol' : '1.2-2' }}</p>
             <p>Target Date: {{ goal.target_date | date: 'mediumDate' }}</p>
