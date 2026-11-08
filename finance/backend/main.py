@@ -32,6 +32,15 @@ class BudgetCreate(BaseModel):
     end_date: date
 
 
+class Income(BaseModel):
+    account_id: int = Field(gt=0)
+    category_id: int | None = Field(default=None, gt=0)
+    amount: Decimal = Field(gt=0, max_digits=12, decimal_places=2)
+    description: str = Field(min_length=1, max_length=100)
+    transaction_date: date
+    notes: str | None = Field(default=None, max_length=500)
+
+
 def get_connected():
     return mysql.connector.connect(
         host="localhost",
@@ -54,6 +63,7 @@ def getUser():
     finally:
         cursor.close()
         conn.close()
+
 
 @app.get("/accounts/{user_id}")
 def getAccounts(user_id:int):
@@ -527,7 +537,7 @@ def transactionFilter(user_id: int,transaction_type: str,):
     try:
         cursor.execute(
               """
-              SELECT transaction_type, amount, description,
+            SELECT transaction_id, account_id, category_id, transaction_type, amount, description,
                      transaction_date, notes
               FROM transactions
               WHERE user_id = %s AND transaction_type = %s
@@ -703,3 +713,116 @@ def budget(user_id: int,):
 @app.get("/.well-known/appspecific/com.chrome.devtools.json")
 async def chrome_devtools():
     return Response(status_code=204)
+##income
+@app.post("/addincome/{user_id}", status_code=status.HTTP_201_CREATED)
+def addIncome(user_id: int, income: Income):
+    description = income.description.strip()
+    if not description:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Description cannot be blank.",
+        )
+
+    conn = get_connected()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        # The account must belong to this user
+        cursor.execute(
+            "SELECT account_id FROM accounts WHERE account_id = %s AND user_id = %s",
+            (income.account_id, user_id),
+        )
+        if cursor.fetchone() is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Account not found for this user.",
+            )
+
+        # The category (if given) must be an Income category this user can use
+        # (their own)
+        if income.category_id is not None:
+            cursor.execute(
+                """
+                SELECT category_id FROM categories
+                WHERE category_id = %s
+                  AND category_type = 'Income'
+                  AND (user_id IS NULL OR user_id = %s)
+                """,
+                (income.category_id, user_id),
+            )
+            if cursor.fetchone() is None:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Income category not found for this user.",
+                )
+
+        cursor.execute(
+            """
+            INSERT INTO transactions
+                (user_id, account_id, category_id, transaction_type,
+                 amount, description, transaction_date, notes)
+            VALUES (%s, %s, %s, 'Income', %s, %s, %s, %s)
+            """,
+            (
+                user_id,
+                income.account_id,
+                income.category_id,
+                income.amount,
+                description,
+                income.transaction_date,
+                income.notes,
+            ),
+        )
+        transaction_id = cursor.lastrowid
+        conn.commit()
+
+        cursor.execute(
+            """
+            SELECT transaction_id, user_id, account_id, category_id,
+                   transaction_type, amount, description,
+                   transaction_date, notes, created_at
+            FROM transactions
+            WHERE transaction_id = %s AND user_id = %s
+            """,
+            (transaction_id, user_id),
+        )
+        created_income = cursor.fetchone()
+        if created_income is None:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Income was saved but could not be loaded.",
+            )
+        return created_income
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        cursor.close()
+        conn.close()
+
+
+@app.delete("/income/{user_id}/{transaction_id}", status_code=status.HTTP_204_NO_CONTENT)
+def deleteIncome(user_id: int, transaction_id: int):
+    conn = get_connected()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            """
+            DELETE FROM transactions
+            WHERE transaction_id = %s
+              AND user_id = %s
+              AND transaction_type = 'Income'
+            """,
+            (transaction_id, user_id),
+        )
+        if cursor.rowcount == 0:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Income entry not found.",
+            )
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        cursor.close()
+        conn.close()

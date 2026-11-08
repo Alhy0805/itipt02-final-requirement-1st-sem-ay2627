@@ -1,13 +1,197 @@
-<ion-header [translucent]="true">
-  <ion-toolbar>
-    <ion-title>income</ion-title>
-  </ion-toolbar>
-</ion-header>
+<ion-content class="income-content" [fullscreen]="true">
+  <main class="income-page">
+    <header class="page-heading">
+      <div>
+        <p class="eyebrow">YOUR MONEY, IN</p>
+        <h1>Income</h1>
+        <p class="page-description">Track every paycheck, side hustle, and other source of income.</p>
+      </div>
+      <ion-button class="add-income-button" (click)="toggleForm()">
+        <ion-icon slot="start" name="add-outline" aria-hidden="true"></ion-icon>
+        Add income
+      </ion-button>
+    </header>
 
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">income</ion-title>
-    </ion-toolbar>
-  </ion-header>
+    <section class="summary-grid" aria-label="Income summary">
+      <article class="summary-card total-card">
+        <span class="summary-icon"><ion-icon name="trending-up-outline" aria-hidden="true"></ion-icon></span>
+        <div>
+          <p>Total income</p>
+          <h2>{{ totalIncome | currency: 'PHP' : 'symbol' : '1.2-2' }}</h2>
+        </div>
+        <span class="summary-caption">All recorded income</span>
+      </article>
+      <article class="summary-card month-card">
+        <span class="summary-icon"><ion-icon name="calendar-outline" aria-hidden="true"></ion-icon></span>
+        <div>
+          <p>This month</p>
+          <h2>{{ monthlyIncome | currency: 'PHP' : 'symbol' : '1.2-2' }}</h2>
+        </div>
+        <span class="summary-caption">{{ currentMonth }}</span>
+      </article>
+      <article class="summary-card count-card">
+        <span class="summary-icon"><ion-icon name="wallet-outline" aria-hidden="true"></ion-icon></span>
+        <div>
+          <p>Income entries</p>
+          <h2>{{ incomes.length }}</h2>
+        </div>
+        <span class="summary-caption">Across all sources</span>
+      </article>
+    </section>
+
+    <section class="income-list-card">
+      <div class="list-heading">
+        <div>
+          <h2>Income history</h2>
+          <p>Review and manage your recorded income.</p>
+        </div>
+        <label class="search-control">
+          <ion-icon name="search-outline" aria-hidden="true"></ion-icon>
+          <input
+            type="search"
+            aria-label="Search income"
+            placeholder="Search income"
+            [value]="searchTerm"
+            (input)="searchTerm = $any($event.target).value"
+          />
+        </label>
+      </div>
+
+      <div *ngIf="errorMessage" class="notice error-notice" role="alert">{{ errorMessage }}</div>
+      <div *ngIf="successMessage" class="notice success-notice" role="status">{{ successMessage }}</div>
+      <div *ngIf="isLoading" class="empty-state">Loading your income...</div>
+
+      <div *ngIf="!isLoading && filteredIncomes.length > 0" class="table-scroll">
+        <table class="income-table">
+          <thead>
+            <tr>
+              <th scope="col">Description</th>
+              <th scope="col">Category</th>
+              <th scope="col">Account</th>
+              <th scope="col">Date</th>
+              <th scope="col" class="amount-column">Amount</th>
+              <th scope="col" class="actions-column"><span class="visually-hidden">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let income of filteredIncomes">
+              <td>
+                <span class="income-description">{{ income.description }}</span>
+                <small *ngIf="income.notes" class="income-notes">{{ income.notes }}</small>
+              </td>
+              <td><span class="category-pill">{{ getCategoryName(income.category_id) }}</span></td>
+              <td>{{ getAccountName(income.account_id) }}</td>
+              <td class="date-cell">{{ income.transaction_date | date: 'mediumDate' }}</td>
+              <td class="amount-column income-amount">{{ income.amount | currency: 'PHP' : 'symbol' : '1.2-2' }}</td>
+              <td class="actions-column">
+                <ion-button
+                  class="delete-button"
+                  fill="clear"
+                  [disabled]="deletingIncomeId === income.transaction_id || isSaving"
+                  [attr.aria-label]="'Delete ' + income.description"
+                  (click)="deleteIncome(income)"
+                >
+                  <ion-icon slot="icon-only" name="trash-outline" aria-hidden="true"></ion-icon>
+                </ion-button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div *ngIf="!isLoading && incomes.length > 0 && filteredIncomes.length === 0" class="empty-state">
+        No income matches “{{ searchTerm }}”.
+      </div>
+      <div *ngIf="!isLoading && incomes.length === 0 && !errorMessage" class="empty-state">
+        <span class="empty-icon"><ion-icon name="trending-up-outline" aria-hidden="true"></ion-icon></span>
+        <h3>No income recorded yet</h3>
+        <p>Add your first income entry to start tracking your earnings.</p>
+        <ion-button class="add-income-button" (click)="toggleForm()">Add your first income</ion-button>
+      </div>
+    </section>
+
+    <section *ngIf="showForm" class="income-form-card" aria-labelledby="income-form-title">
+      <div class="form-heading">
+        <div>
+          <p class="eyebrow">NEW ENTRY</p>
+          <h2 id="income-form-title">Add income</h2>
+        </div>
+        <ion-button class="close-form-button" fill="clear" aria-label="Close form" (click)="toggleForm()">
+          <ion-icon slot="icon-only" name="close-outline" aria-hidden="true"></ion-icon>
+        </ion-button>
+      </div>
+
+      <form (ngSubmit)="saveIncome()">
+        <div class="form-grid">
+          <label>
+            <span>Description <b>*</b></span>
+            <input
+              name="description"
+              type="text"
+              maxlength="100"
+              placeholder="e.g. Monthly salary"
+              [(ngModel)]="newIncome.description"
+              required
+            />
+          </label>
+          <label>
+            <span>Amount <b>*</b></span>
+            <div class="amount-input">
+              <span>₱</span>
+              <input
+                name="amount"
+                type="number"
+                min="0.01"
+                step="0.01"
+                placeholder="0.00"
+                [(ngModel)]="newIncome.amount"
+                required
+              />
+            </div>
+          </label>
+          <label>
+            <span>Category</span>
+            <select name="category" [(ngModel)]="newIncome.category_id">
+              <option [ngValue]="null">Select a category</option>
+              <option *ngFor="let category of categories" [ngValue]="category.category_id">
+                {{ category.category_name }}
+              </option>
+            </select>
+          </label>
+          <label>
+            <span>Deposit to <b>*</b></span>
+            <select name="account" [(ngModel)]="newIncome.account_id" required>
+              <option [ngValue]="null" disabled>Select an account</option>
+              <option *ngFor="let account of accounts" [ngValue]="account.account_id">
+                {{ account.account_name }}
+              </option>
+            </select>
+          </label>
+          <label>
+            <span>Date <b>*</b></span>
+            <input name="date" type="date" [(ngModel)]="newIncome.transaction_date" required />
+          </label>
+          <label class="notes-field">
+            <span>Notes</span>
+            <input
+              name="notes"
+              type="text"
+              maxlength="500"
+              placeholder="Add a note (optional)"
+              [(ngModel)]="newIncome.notes"
+            />
+          </label>
+        </div>
+        <p *ngIf="accounts.length === 0" class="form-hint" role="status">Add an account before recording income.</p>
+        <div class="form-actions">
+          <ion-button class="cancel-button" fill="outline" type="button" [disabled]="isSaving" (click)="toggleForm()">
+            Cancel
+          </ion-button>
+          <ion-button class="add-income-button" type="submit" [disabled]="isSaving || accounts.length === 0">
+            {{ isSaving ? 'Saving...' : 'Save income' }}
+          </ion-button>
+        </div>
+      </form>
+    </section>
+  </main>
 </ion-content>
