@@ -34,6 +34,7 @@ interface IncomeCategory {
   category_id: number;
   category_name: string;
   category_type: string;
+  user_id?: number | null;
 }
 
 interface NewIncome {
@@ -141,7 +142,10 @@ export class IncomePage implements OnInit {
         this.categories = (resources.categories ?? []).filter((category) => category.category_type === 'Income');
       }
 
-      const requests: Promise<Response>[] = [fetch(`${this.incomeAPI}/transactionFilter/${userId}/Income`)];
+      const requests = [
+        fetch(`${this.incomeAPI}/transactionFilter/${userId}/Income`),
+        fetch(`${this.incomeAPI}/categories/${userId}`),
+      ];
       if (this.accounts.length === 0) {
         requests.push(fetch(`${this.incomeAPI}/accounts/${userId}`));
       }
@@ -152,7 +156,11 @@ export class IncomePage implements OnInit {
       }
 
       this.incomes = (await responses[0].json()) as Income[];
-      if (responses[1]) this.accounts = (await responses[1].json()) as IncomeAccount[];
+      this.categories = this.uniqueCategories(
+        ((await responses[1].json()) as IncomeCategory[]).filter((category) => category.category_type === 'Income'),
+      );
+      if (responses[2]) this.accounts = (await responses[2].json()) as IncomeAccount[];
+      this.updateCachedCategories();
     } catch (error) {
       console.error('Unable to load income:', error);
       this.errorMessage = error instanceof Error ? error.message : 'Unable to load income.';
@@ -269,6 +277,25 @@ export class IncomePage implements OnInit {
       'finance-resources',
       JSON.stringify({ ...resources, transactions: [...otherTransactions, ...this.incomes] }),
     );
+  }
+
+  private updateCachedCategories(): void {
+    const savedResources = localStorage.getItem('finance-resources');
+    const resources = savedResources ? (JSON.parse(savedResources) as CachedResources) : {};
+    const otherCategories = (resources.categories ?? []).filter((category) => category.category_type !== 'Income');
+    localStorage.setItem(
+      'finance-resources',
+      JSON.stringify({ ...resources, categories: [...otherCategories, ...this.categories] }),
+    );
+  }
+
+  private uniqueCategories(categories: IncomeCategory[]): IncomeCategory[] {
+    const categoryMap = new Map<string, IncomeCategory>();
+    for (const category of categories) {
+      const key = `${category.category_type}:${category.category_name.trim().toLocaleLowerCase()}`;
+      if (!categoryMap.has(key)) categoryMap.set(key, category);
+    }
+    return [...categoryMap.values()];
   }
 
   private emptyIncome(): NewIncome {

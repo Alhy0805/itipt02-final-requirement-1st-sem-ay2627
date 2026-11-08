@@ -41,6 +41,15 @@ class Income(BaseModel):
     notes: str | None = Field(default=None, max_length=500)
 
 
+class Expense(BaseModel):
+    account_id: int = Field(gt=0)
+    category_id: int | None = Field(default=None, gt=0)
+    amount: Decimal = Field(gt=0, max_digits=12, decimal_places=2)
+    description: str = Field(min_length=1, max_length=100)
+    transaction_date: date
+    notes: str | None = Field(default=None, max_length=500)
+
+
 def get_connected():
     return mysql.connector.connect(
         host="localhost",
@@ -76,6 +85,26 @@ def getAccounts(user_id:int):
     accounts = cursor.fetchall()
     cursor.close()
     return accounts
+
+
+@app.get("/categories/{user_id}")
+def getCategories(user_id: int):
+    conn = get_connected()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute(
+            """
+            SELECT category_id, category_name, category_type, icon, color
+            FROM categories
+            WHERE user_id = %s OR user_id IS NULL
+            ORDER BY category_name, category_type, (user_id = %s) DESC, category_id
+            """,
+            (user_id, user_id),
+        )
+        return cursor.fetchall()
+    finally:
+        cursor.close()
+        conn.close()
 
 
 @app.post("/budgets", status_code=status.HTTP_201_CREATED)
@@ -818,6 +847,117 @@ def deleteIncome(user_id: int, transaction_id: int):
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Income entry not found.",
+            )
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        cursor.close()
+        conn.close()
+
+##expense
+@app.post("/addexpense/{user_id}", status_code=status.HTTP_201_CREATED)
+def addExpense(user_id: int, expense: Expense):
+    description = expense.description.strip()
+    if not description:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Description cannot be blank.",
+        )
+
+    conn = get_connected()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute(
+            "SELECT account_id FROM accounts WHERE account_id = %s AND user_id = %s",
+            (expense.account_id, user_id),
+        )
+        if cursor.fetchone() is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Account not found for this user.",
+            )
+
+        if expense.category_id is not None:
+            cursor.execute(
+                """
+                SELECT category_id FROM categories
+                WHERE category_id = %s
+                  AND category_type = 'Expense'
+                  AND (user_id IS NULL OR user_id = %s)
+                """,
+                (expense.category_id, user_id),
+            )
+            if cursor.fetchone() is None:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Expense category not found for this user.",
+                )
+
+        cursor.execute(
+            """
+            INSERT INTO transactions
+                (user_id, account_id, category_id, transaction_type,
+                 amount, description, transaction_date, notes)
+            VALUES (%s, %s, %s, 'Expense', %s, %s, %s, %s)
+            """,
+            (
+                user_id,
+                expense.account_id,
+                expense.category_id,
+                expense.amount,
+                description,
+                expense.transaction_date,
+                expense.notes,
+            ),
+        )
+        transaction_id = cursor.lastrowid
+        conn.commit()
+
+        cursor.execute(
+            """
+            SELECT transaction_id, user_id, account_id, category_id,
+                   transaction_type, amount, description,
+                   transaction_date, notes, created_at
+            FROM transactions
+            WHERE transaction_id = %s AND user_id = %s
+            """,
+            (transaction_id, user_id),
+        )
+        created_expense = cursor.fetchone()
+        if created_expense is None:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Expense was saved but could not be loaded.",
+            )
+        return created_expense
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        cursor.close()
+        conn.close()
+
+
+@app.delete("/expense/{user_id}/{transaction_id}", status_code=status.HTTP_204_NO_CONTENT)
+def deleteExpense(user_id: int, transaction_id: int):
+    conn = get_connected()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            """
+            DELETE FROM transactions
+            WHERE transaction_id = %s
+              AND user_id = %s
+              AND transaction_type = 'Expense'
+            """,
+            (transaction_id, user_id),
+        )
+        if cursor.rowcount == 0:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Expense entry not found.",
             )
         conn.commit()
     except Exception:

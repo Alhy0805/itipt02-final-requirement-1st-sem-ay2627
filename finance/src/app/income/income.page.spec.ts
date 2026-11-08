@@ -14,7 +14,7 @@ describe('IncomePage', () => {
       'finance-resources',
       JSON.stringify({
         accounts: [{ account_id: 7, account_name: 'Cash' }],
-        categories: [{ category_id: 3, category_name: 'Salary', category_type: 'Income' }],
+        categories: [],
         transactions: [],
       }),
     );
@@ -37,7 +37,7 @@ describe('IncomePage', () => {
         transaction_id: 1,
         transaction_type: 'Income' as const,
         account_id: 7,
-        category_id: 3,
+        category_id: 1,
         amount: 1250,
         description: 'Payday',
         transaction_date: '2026-11-08',
@@ -46,13 +46,24 @@ describe('IncomePage', () => {
     ];
     const fetchMock = vi.mocked(fetch);
     fetchMock.mockResolvedValueOnce(new Response(JSON.stringify(incomes), { status: 200 }));
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify([
+          { category_id: 1, category_name: 'Salary', category_type: 'Income', user_id: null },
+          { category_id: 8, category_name: 'Freelance', category_type: 'Income', user_id: 42 },
+          { category_id: 2, category_name: 'Food', category_type: 'Expense', user_id: null },
+        ]),
+        { status: 200 },
+      ),
+    );
 
     await component.loadIncomes();
 
-    expect(fetchMock).toHaveBeenLastCalledWith('http://127.0.0.1:8000/transactionFilter/42/Income');
+    expect(fetchMock).toHaveBeenNthCalledWith(2, 'http://127.0.0.1:8000/categories/42');
     expect(component.incomes).toEqual(incomes);
     expect(component.totalIncome).toBe(1250);
-    expect(component.getCategoryName(3)).toBe('Salary');
+    expect(component.getCategoryName(1)).toBe('Salary');
+    expect(component.categories.map((category) => category.category_name)).toEqual(['Salary', 'Freelance']);
   });
 
   it('adds income through the backend and updates the cached transactions', async () => {
