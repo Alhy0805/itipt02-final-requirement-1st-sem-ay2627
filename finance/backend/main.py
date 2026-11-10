@@ -1,12 +1,15 @@
 from datetime import date
 from decimal import Decimal
-
+import hashlib
+import hmac
+import re
+import secrets
 from fastapi import FastAPI, HTTPException, Query, status, Response
 from pydantic import BaseModel, Field
 from fastapi.middleware.cors import CORSMiddleware
-import hmac
 import mysql.connector
 import json
+
 app = FastAPI()
 
 app.add_middleware(
@@ -21,6 +24,22 @@ app.add_middleware(
 class LoginRequest(BaseModel):
     email: str = Field(min_length=3, max_length=150)
     password: str = Field(min_length=1, max_length=255)
+
+
+class SignupRequest(BaseModel):
+    full_name: str = Field(min_length=1, max_length=100)
+    email: str = Field(min_length=3, max_length=150)
+    password: str = Field(min_length=6, max_length=255)
+
+
+class AccountUpdate(BaseModel):
+    account_name: str = Field(min_length=1, max_length=100)
+    account_type_ids: list[int] = Field(min_length=1)
+    balance: Decimal = Field(max_digits=12, decimal_places=2)
+
+
+class AccountCreate(AccountUpdate):
+    pass
 
 
 class BudgetCreate(BaseModel):
@@ -50,6 +69,42 @@ class Expense(BaseModel):
     notes: str | None = Field(default=None, max_length=500)
 
 
+PASSWORD_HASH_ITERATIONS = 600_000
+PASSWORD_HASH_PREFIX = "$pbkdf2_sha256$"
+
+
+def hash_password(password: str) -> str:
+    salt = secrets.token_bytes(16)
+    digest = hashlib.pbkdf2_hmac(
+        "sha256", password.encode("utf-8"), salt, PASSWORD_HASH_ITERATIONS
+    ).hex()
+    return f"{PASSWORD_HASH_PREFIX}{PASSWORD_HASH_ITERATIONS}${salt.hex()}${digest}"
+
+
+def verify_password(password: str, stored_hash: str) -> tuple[bool, bool]:
+    if not stored_hash.startswith(PASSWORD_HASH_PREFIX):
+        return hmac.compare_digest(stored_hash, password), True
+
+    try:
+        _, algorithm, rounds, salt_hex, expected_digest = stored_hash.split("$")
+        iterations = int(rounds)
+        salt = bytes.fromhex(salt_hex)
+    except (TypeError, ValueError):
+        return False, False
+
+    if (
+        algorithm != "pbkdf2_sha256"
+        or not 100_000 <= iterations <= PASSWORD_HASH_ITERATIONS
+        or len(salt) != 16
+    ):
+        return False, False
+
+    digest = hashlib.pbkdf2_hmac(
+        "sha256", password.encode("utf-8"), salt, iterations
+    ).hex()
+    return hmac.compare_digest(digest, expected_digest), False
+
+
 def get_connected():
     return mysql.connector.connect(
         host="localhost",
@@ -75,16 +130,293 @@ def getUser():
 
 
 @app.get("/accounts/{user_id}")
-def getAccounts(user_id:int):
+def getAccounts(user_id: int):
     conn = get_connected()
-    cursor = conn.cursor(dictionary = True)
-    cursor.execute(
-        "SELECT * FROM accounts WHERE user_id = %s",
-        (user_id,)
-    )
-    accounts = cursor.fetchall()
-    cursor.close()
-    return accounts
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute(
+            """
+            SELECT
+                a.account_id,
+                a.user_id,
+                a.account_name,
+                a.balance,
+                a.created_at,
+                at.account_type_id,
+                at.type_name
+            FROM accounts a
+            LEFT JOIN account_account_types aat ON aat.account_id = a.account_id
+            LEFT JOIN account_types at ON at.account_type_id = aat.account_type_id
+            WHERE a.user_id = %s
+            ORDER BY a.created_at, a.account_id, at.account_type_id
+            """,
+            (user_id,),
+        )
+        accounts_by_id = {}
+        for row in cursor.fetchall():
+            account_id = row["account_id"]
+            account = accounts_by_id.get(account_id)
+            if account is None:
+                account = {
+                    "account_id": account_id,
+                    "user_id": row["user_id"],
+                    "account_name": row["account_name"],
+                    "balance": row["balance"],
+                    "created_at": row["created_at"],
+                    "account_types": [],
+                    "account_type_ids": [],
+                }
+                accounts_by_id[account_id] = account
+            if row["account_type_id"] is not None:
+                account["account_type_ids"].append(row["account_type_id"])
+                account["account_types"].append(
+                    {
+                        "account_type_id": row["account_type_id"],
+                        "type_name": row["type_name"],
+                    }
+                )
+        return list(accounts_by_id.values())
+    finally:
+        cursor.close()
+        conn.close()
+
+
+@app.get("/account-types")
+def getAccountTypes():
+    conn = get_connected()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute(
+            """
+            SELECT account_type_id, type_name
+            FROM account_types
+            ORDER BY account_type_id
+            """
+        )
+        return cursor.fetchall()
+    finally:
+        cursor.close()
+        conn.close()
+
+
+@app.post("/accounts/{user_id}", status_code=status.HTTP_201_CREATED)
+def createAccount(user_id: int, account: AccountCreate):
+    account_name = account.account_name.strip()
+    if not account_name:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Account name cannot be blank.",
+        )
+    account_type_ids = list(dict.fromkeys(account.account_type_ids))
+    if not account_type_ids or any(account_type_id <= 0 for account_type_id in account_type_ids):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Select at least one valid account type.",
+        )
+
+    conn = get_connected()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute("SELECT user_id FROM users WHERE user_id = %s", (user_id,))
+        if cursor.fetchone() is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found.",
+            )
+
+        placeholders = ", ".join(["%s"] * len(account_type_ids))
+        cursor.execute(
+            f"SELECT account_type_id FROM account_types WHERE account_type_id IN ({placeholders})",
+            tuple(account_type_ids),
+        )
+        valid_type_ids = {row["account_type_id"] for row in cursor.fetchall()}
+        if valid_type_ids != set(account_type_ids):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Select only valid account types.",
+            )
+
+        cursor.execute(
+            """
+            INSERT INTO accounts (user_id, account_name, balance)
+            VALUES (%s, %s, %s)
+            """,
+            (user_id, account_name, account.balance),
+        )
+        account_id = cursor.lastrowid
+        cursor.executemany(
+            """
+            INSERT INTO account_account_types (account_id, account_type_id)
+            VALUES (%s, %s)
+            """,
+            [(account_id, account_type_id) for account_type_id in account_type_ids],
+        )
+        cursor.execute(
+            """
+            SELECT
+                a.account_id,
+                a.user_id,
+                a.account_name,
+                a.balance,
+                a.created_at,
+                at.account_type_id,
+                at.type_name
+            FROM accounts a
+            JOIN account_account_types aat ON aat.account_id = a.account_id
+            JOIN account_types at ON at.account_type_id = aat.account_type_id
+            WHERE a.account_id = %s AND a.user_id = %s
+            ORDER BY at.account_type_id
+            """,
+            (account_id, user_id),
+        )
+        account_rows = cursor.fetchall()
+        if not account_rows:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Account was created but could not be loaded.",
+            )
+        created_account = {
+            "account_id": account_rows[0]["account_id"],
+            "user_id": account_rows[0]["user_id"],
+            "account_name": account_rows[0]["account_name"],
+            "balance": account_rows[0]["balance"],
+            "created_at": account_rows[0]["created_at"],
+            "account_types": [
+                {"account_type_id": row["account_type_id"], "type_name": row["type_name"]}
+                for row in account_rows
+            ],
+            "account_type_ids": [row["account_type_id"] for row in account_rows],
+        }
+        conn.commit()
+        return created_account
+    except HTTPException:
+        conn.rollback()
+        raise
+    except mysql.connector.Error:
+        conn.rollback()
+        raise
+    finally:
+        cursor.close()
+        conn.close()
+
+
+@app.put("/accounts/{user_id}/{account_id}")
+def updateAccount(user_id: int, account_id: int, account: AccountUpdate):
+    account_name = account.account_name.strip()
+    if not account_name:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Account name cannot be blank.",
+        )
+    account_type_ids = list(dict.fromkeys(account.account_type_ids))
+    if not account_type_ids or any(account_type_id <= 0 for account_type_id in account_type_ids):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Select at least one valid account type.",
+        )
+
+    conn = get_connected()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        placeholders = ", ".join(["%s"] * len(account_type_ids))
+        cursor.execute(
+            f"SELECT account_type_id FROM account_types WHERE account_type_id IN ({placeholders})",
+            tuple(account_type_ids),
+        )
+        valid_type_ids = {row["account_type_id"] for row in cursor.fetchall()}
+        if valid_type_ids != set(account_type_ids):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Select only valid account types.",
+            )
+
+        cursor.execute(
+            """
+            UPDATE accounts
+            SET account_name = %s,
+                balance = %s
+            WHERE account_id = %s AND user_id = %s
+            """,
+            (
+                account_name,
+                account.balance,
+                account_id,
+                user_id,
+            ),
+        )
+        if cursor.rowcount == 0:
+            cursor.execute(
+                "SELECT account_id FROM accounts WHERE account_id = %s AND user_id = %s",
+                (account_id, user_id),
+            )
+            if cursor.fetchone() is None:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Account not found for this user.",
+                )
+
+        cursor.execute(
+            "DELETE FROM account_account_types WHERE account_id = %s",
+            (account_id,),
+        )
+        cursor.executemany(
+            """
+            INSERT INTO account_account_types (account_id, account_type_id)
+            VALUES (%s, %s)
+            """,
+            [(account_id, account_type_id) for account_type_id in account_type_ids],
+        )
+
+        conn.commit()
+        cursor.execute(
+            """
+            SELECT
+                a.account_id,
+                a.user_id,
+                a.account_name,
+                a.balance,
+                a.created_at,
+                at.account_type_id,
+                at.type_name
+            FROM accounts a
+            LEFT JOIN account_account_types aat ON aat.account_id = a.account_id
+            LEFT JOIN account_types at ON at.account_type_id = aat.account_type_id
+            WHERE a.account_id = %s AND a.user_id = %s
+            ORDER BY at.account_type_id
+            """,
+            (account_id, user_id),
+        )
+        account_rows = cursor.fetchall()
+        if not account_rows:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Account was updated but could not be loaded.",
+            )
+        updated_account = {
+            "account_id": account_rows[0]["account_id"],
+            "user_id": account_rows[0]["user_id"],
+            "account_name": account_rows[0]["account_name"],
+            "balance": account_rows[0]["balance"],
+            "created_at": account_rows[0]["created_at"],
+            "account_types": [],
+            "account_type_ids": [],
+        }
+        for row in account_rows:
+            if row["account_type_id"] is not None:
+                updated_account["account_type_ids"].append(row["account_type_id"])
+                updated_account["account_types"].append(
+                    {
+                        "account_type_id": row["account_type_id"],
+                        "type_name": row["type_name"],
+                    }
+                )
+        return updated_account
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        cursor.close()
+        conn.close()
 
 
 @app.get("/categories/{user_id}")
@@ -278,6 +610,70 @@ def deleteBudget(user_id: int, budget_id: int):
         conn.close()
 
 
+@app.post("/signup", status_code=status.HTTP_201_CREATED)
+def createAccount(signup: SignupRequest):
+    full_name = signup.full_name.strip()
+    email = signup.email.strip().lower()
+
+    if not full_name:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Full name cannot be blank.",
+        )
+    if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Enter a valid email address.",
+        )
+
+    conn = get_connected()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute(
+            "SELECT user_id FROM users WHERE email = %s LIMIT 1",
+            (email,),
+        )
+        if cursor.fetchone() is not None:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="An account with this email already exists.",
+            )
+
+        cursor.execute(
+            """
+            INSERT INTO users (full_name, email, password_hash)
+            VALUES (%s, %s, %s)
+            """,
+            (full_name, email, hash_password(signup.password)),
+        )
+        user_id = cursor.lastrowid
+        conn.commit()
+        return {
+            "message": "Account created successfully.",
+            "user": {
+                "user_id": user_id,
+                "full_name": full_name,
+                "email": email,
+                "profile_image": None,
+                "currency": "PHP",
+            },
+        }
+    except mysql.connector.IntegrityError as error:
+        conn.rollback()
+        if error.errno == 1062:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="An account with this email already exists.",
+            ) from error
+        raise
+    except mysql.connector.Error:
+        conn.rollback()
+        raise
+    finally:
+        cursor.close()
+        conn.close()
+
+
 @app.post("/checkCredentials")
 def checkAccount(credentials: LoginRequest):
     conn = get_connected()
@@ -300,11 +696,21 @@ def checkAccount(credentials: LoginRequest):
                 detail="This email is not registered.",
             )
 
-        if not hmac.compare_digest(user["password_hash"], credentials.password):
+        password_is_valid, needs_rehash = verify_password(
+            credentials.password, user["password_hash"]
+        )
+        if not password_is_valid:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Incorrect password.",
             )
+
+        if needs_rehash:
+            cursor.execute(
+                "UPDATE users SET password_hash = %s WHERE user_id = %s",
+                (hash_password(credentials.password), user["user_id"]),
+            )
+            conn.commit()
 
         # Never return password_hash to the client.
         return {
@@ -351,14 +757,24 @@ def getResources(user_id: int):
             SELECT user_id,
                 CONCAT('[', COALESCE(GROUP_CONCAT(
                     JSON_OBJECT(
-                        'account_id', account_id,
-                        'account_name', account_name,
-                        'account_type', account_type,
-                        'balance', initial_balance
+                        'account_id', a.account_id,
+                        'account_name', a.account_name,
+                        'balance', a.balance,
+                        'account_types', COALESCE((
+                            SELECT CONCAT('[', COALESCE(GROUP_CONCAT(
+                                JSON_OBJECT(
+                                    'account_type_id', at.account_type_id,
+                                    'type_name', at.type_name
+                                )
+                            ), ''), ']')
+                            FROM account_account_types aat
+                            JOIN account_types at ON at.account_type_id = aat.account_type_id
+                            WHERE aat.account_id = a.account_id
+                        ), '[]')
                     )
                 ), ''), ']') AS accounts
-            FROM accounts
-            GROUP BY user_id
+            FROM accounts a
+            GROUP BY a.user_id
         ) a ON a.user_id = u.user_id
 
         LEFT JOIN (
@@ -522,6 +938,12 @@ def getResources(user_id: int):
 
         for column in json_columns:
             result[column] = json.loads(result[column])
+
+        for account in result["accounts"]:
+            account["account_types"] = json.loads(account["account_types"])
+            account["account_type_ids"] = [
+                account_type["account_type_id"] for account_type in account["account_types"]
+            ]
 
         return result
 

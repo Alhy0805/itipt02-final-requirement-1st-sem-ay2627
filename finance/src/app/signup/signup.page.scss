@@ -1,0 +1,215 @@
+:host {
+  display: block;
+  min-height: 100%;
+}
+
+.signup-content {
+  --background: #f8fafc;
+}
+
+.signup-container {
+  box-sizing: border-box;
+  display: flex;
+  min-height: 100%;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: var(--background);
+}
+
+.signup-card {
+  width: min(100%, 440px);
+  margin: 0;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: 0 12px 32px rgb(15 23 42 / 8%);
+}
+
+.signup-card ion-card-content {
+  padding: 24px;
+}
+
+.brand-name {
+  display: flex;
+  width: fit-content;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0 auto 24px;
+  color: var(--text-primary);
+  font-size: 30px;
+  font-weight: 750;
+  letter-spacing: -0.8px;
+}
+
+.brand-name > ion-text {
+  display: inline;
+}
+
+.brand-accent {
+  color: var(--primary);
+}
+
+.signup-heading {
+  margin-bottom: 22px;
+  text-align: center;
+}
+
+.signup-heading h1 {
+  margin: 0 0 8px;
+  color: var(--text-primary);
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.signup-heading p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.signup-form {
+  padding: 0;
+  background: transparent;
+}
+
+.signup-form > ion-label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.signup-form > .field-label {
+  margin-top: 12px;
+}
+
+.input-wrap {
+  --background: #f8fafc;
+  --min-height: 48px;
+  --padding-start: 12px;
+  --inner-padding-end: 12px;
+
+  margin-bottom: 5px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.input-wrap:focus-within {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgb(37 99 235 / 10%);
+}
+
+.input-wrap.invalid {
+  border-color: var(--expense);
+}
+
+.input-wrap ion-icon,
+.show-password {
+  color: var(--text-muted);
+}
+
+.input-wrap ion-icon {
+  margin-inline-end: 10px;
+}
+
+.show-password {
+  margin: 0;
+}
+
+.field-error {
+  display: block;
+  min-height: 14px;
+  margin: 2px 0 5px;
+  color: var(--expense);
+  font-size: 12px;
+}
+
+.terms {
+  --background: transparent;
+  --min-height: 42px;
+  --padding-start: 0;
+  --inner-padding-end: 0;
+
+  margin: 8px 0 0;
+}
+
+.terms ion-checkbox {
+  --size: 16px;
+  --checkbox-background-checked: var(--primary);
+
+  margin-inline-end: 8px;
+}
+
+.terms ion-label {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.terms-invalid ion-label {
+  color: var(--expense);
+}
+
+.terms-error {
+  min-height: 14px;
+  margin-top: 0;
+}
+
+.create-account {
+  width: 100%;
+  height: 48px;
+  margin: 10px 0 0;
+  --background: var(--primary);
+  --background-hover: var(--primary-hover);
+  --border-radius: 8px;
+  --box-shadow: none;
+
+  font-weight: 600;
+  text-transform: none;
+}
+
+.create-account ion-icon {
+  margin-inline-start: 8px;
+}
+
+.form-message {
+  display: block;
+  margin-top: 10px;
+  color: var(--text-muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+.form-message.form-error {
+  color: var(--expense);
+}
+
+.login-link {
+  display: block;
+  margin: 20px 0 0;
+  color: var(--text-muted);
+  font-size: 13px;
+  text-align: center;
+}
+
+.login-link ion-button {
+  margin: 0;
+  --padding-start: 0;
+  --padding-end: 0;
+
+  color: var(--primary);
+  text-transform: none;
+}
+
+@media (max-width: 380px) {
+  .signup-container {
+    padding: 12px;
+  }
+
+  .signup-card ion-card-content {
+    padding: 20px;
+  }
+}

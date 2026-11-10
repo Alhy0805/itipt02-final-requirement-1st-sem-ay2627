@@ -13,12 +13,23 @@ describe('IncomePage', () => {
     localStorage.setItem(
       'finance-resources',
       JSON.stringify({
-        accounts: [{ account_id: 7, account_name: 'Cash' }],
+        accounts: [
+          {
+            account_id: 7,
+            account_types: [
+              { account_type_id: 1, type_name: 'Cash' },
+              { account_type_id: 2, type_name: 'Bank' },
+            ],
+          },
+        ],
         categories: [],
         transactions: [],
       }),
     );
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify([]), { status: 200 })));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation(() => Promise.resolve(new Response(JSON.stringify([]), { status: 200 }))),
+    );
     fixture = TestBed.createComponent(IncomePage);
     component = fixture.componentInstance;
     fixture.detectChanges();
@@ -56,12 +67,30 @@ describe('IncomePage', () => {
         { status: 200 },
       ),
     );
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify([
+          {
+            account_id: 7,
+            account_name: 'Payroll Checking',
+            account_types: [
+              { account_type_id: 1, type_name: 'Cash' },
+              { account_type_id: 2, type_name: 'Bank' },
+            ],
+          },
+        ]),
+        { status: 200 },
+      ),
+    );
 
     await component.loadIncomes();
 
     expect(fetchMock).toHaveBeenNthCalledWith(2, 'http://127.0.0.1:8000/categories/42');
+    expect(fetchMock).toHaveBeenNthCalledWith(3, 'http://127.0.0.1:8000/accounts/42');
     expect(component.incomes).toEqual(incomes);
     expect(component.totalIncome).toBe(1250);
+    expect(component.getAccountLabel(7)).toBe('Payroll Checking');
+    expect(component.getAccountLabel(8)).toBe('Unknown account');
     expect(component.getCategoryName(1)).toBe('Salary');
     expect(component.categories.map((category) => category.category_name)).toEqual(['Salary', 'Freelance']);
   });

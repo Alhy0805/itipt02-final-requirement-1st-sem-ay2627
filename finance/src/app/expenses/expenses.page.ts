@@ -28,6 +28,7 @@ interface Expense {
 interface ExpenseAccount {
   account_id: number;
   account_name: string;
+  account_types: { account_type_id: number; type_name: string }[];
 }
 
 interface ExpenseCategory {
@@ -100,7 +101,7 @@ export class ExpensesPage implements OnInit {
         expense.description,
         expense.notes ?? '',
         this.getCategoryName(expense.category_id),
-        this.getAccountName(expense.account_id),
+        this.getAccountLabel(expense.account_id),
       ].some((value) => value.toLowerCase().includes(term)),
     );
   }
@@ -145,10 +146,8 @@ export class ExpensesPage implements OnInit {
       const requests = [
         fetch(`${this.expenseAPI}/transactionFilter/${userId}/Expense`),
         fetch(`${this.expenseAPI}/categories/${userId}`),
+        fetch(`${this.expenseAPI}/accounts/${userId}`),
       ];
-      if (this.accounts.length === 0) {
-        requests.push(fetch(`${this.expenseAPI}/accounts/${userId}`));
-      }
 
       const responses = await Promise.all(requests);
       for (const response of responses) {
@@ -159,7 +158,8 @@ export class ExpensesPage implements OnInit {
       this.categories = this.uniqueCategories(
         ((await responses[1].json()) as ExpenseCategory[]).filter((category) => category.category_type === 'Expense'),
       );
-      if (responses[2]) this.accounts = (await responses[2].json()) as ExpenseAccount[];
+      this.accounts = (await responses[2].json()) as ExpenseAccount[];
+      this.updateCachedAccounts();
       this.updateCachedCategories();
     } catch (error) {
       console.error('Unable to load expenses:', error);
@@ -263,8 +263,9 @@ export class ExpensesPage implements OnInit {
     );
   }
 
-  getAccountName(accountId: number): string {
-    return this.accounts.find((account) => Number(account.account_id) === Number(accountId))?.account_name ?? 'Account';
+  getAccountLabel(accountId: number): string {
+    const account = this.accounts.find((item) => Number(item.account_id) === Number(accountId));
+    return account?.account_name ?? 'Unknown account';
   }
 
   private updateCachedTransactions(): void {
@@ -287,6 +288,12 @@ export class ExpensesPage implements OnInit {
       'finance-resources',
       JSON.stringify({ ...resources, categories: [...otherCategories, ...this.categories] }),
     );
+  }
+
+  private updateCachedAccounts(): void {
+    const savedResources = localStorage.getItem('finance-resources');
+    const resources = savedResources ? (JSON.parse(savedResources) as CachedResources) : {};
+    localStorage.setItem('finance-resources', JSON.stringify({ ...resources, accounts: this.accounts }));
   }
 
   private uniqueCategories(categories: ExpenseCategory[]): ExpenseCategory[] {

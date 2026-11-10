@@ -1,0 +1,113 @@
+<ion-content [fullscreen]="true" class="signup-content">
+  <div class="signup-container">
+    <ion-card class="signup-card">
+      <ion-card-content>
+        <ion-text class="brand-name"
+          ><ion-text>Finance</ion-text><ion-text class="brand-accent">Tracker</ion-text></ion-text
+        >
+        <div class="signup-heading">
+          <h1>Create your account</h1>
+          <p>Start taking control of your finances and reaching your goals.</p>
+        </div>
+
+        <form (ngSubmit)="createAccount()" novalidate>
+          <ion-list lines="none" class="signup-form">
+            <ion-label for="fullName">Full name</ion-label>
+            <ion-item class="input-wrap" [class.invalid]="formSubmitted && !isNameValid">
+              <ion-icon name="person-outline" slot="start" aria-hidden="true"></ion-icon>
+              <ion-input
+                id="fullName"
+                name="fullName"
+                type="text"
+                placeholder="Your name"
+                autocomplete="name"
+                maxlength="100"
+                [(ngModel)]="fullName"
+              ></ion-input>
+            </ion-item>
+            <ion-text class="field-error" *ngIf="formSubmitted && !isNameValid">Enter your full name.</ion-text>
+
+            <ion-label for="email">Email address</ion-label>
+            <ion-item class="input-wrap" [class.invalid]="formSubmitted && !isEmailValid">
+              <ion-icon name="mail-outline" slot="start" aria-hidden="true"></ion-icon>
+              <ion-input
+                id="email"
+                name="email"
+                type="email"
+                placeholder="you@gmail.com"
+                autocomplete="email"
+                maxlength="150"
+                [(ngModel)]="email"
+              ></ion-input>
+            </ion-item>
+            <ion-text class="field-error" *ngIf="formSubmitted && !isEmailValid">Enter a valid email address.</ion-text>
+
+            <ion-label class="field-label" for="password">Password</ion-label>
+            <ion-item class="input-wrap" [class.invalid]="formSubmitted && !isPasswordValid">
+              <ion-icon name="lock-closed-outline" slot="start" aria-hidden="true"></ion-icon>
+              <ion-input
+                id="password"
+                name="password"
+                [type]="showPassword ? 'text' : 'password'"
+                placeholder="At least 6 characters"
+                autocomplete="new-password"
+                maxlength="255"
+                [(ngModel)]="password"
+              ></ion-input>
+              <ion-button
+                type="button"
+                slot="end"
+                fill="clear"
+                class="show-password"
+                [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'"
+                (click)="showPassword = !showPassword"
+                ><ion-icon [name]="showPassword ? 'eye-off-outline' : 'eye-outline'"></ion-icon
+              ></ion-button>
+            </ion-item>
+            <ion-text class="field-error" *ngIf="formSubmitted && !isPasswordValid"
+              >Password must contain at least 6 characters.</ion-text
+            >
+
+            <ion-label class="field-label" for="confirmPassword">Confirm password</ion-label>
+            <ion-item class="input-wrap" [class.invalid]="formSubmitted && !isConfirmationValid">
+              <ion-icon name="lock-closed-outline" slot="start" aria-hidden="true"></ion-icon>
+              <ion-input
+                id="confirmPassword"
+                name="confirmPassword"
+                [type]="showPassword ? 'text' : 'password'"
+                placeholder="Re-enter your password"
+                autocomplete="new-password"
+                maxlength="255"
+                [(ngModel)]="confirmPassword"
+              ></ion-input>
+            </ion-item>
+            <ion-text class="field-error" *ngIf="formSubmitted && !isConfirmationValid">Passwords must match.</ion-text>
+
+            <ion-item class="terms" [class.terms-invalid]="formSubmitted && !acceptedTerms">
+              <ion-checkbox slot="start" name="acceptedTerms" [(ngModel)]="acceptedTerms"></ion-checkbox>
+              <ion-label>I agree to the Terms of Service and Privacy Policy.</ion-label>
+            </ion-item>
+            <ion-text class="field-error terms-error" *ngIf="formSubmitted && !acceptedTerms"
+              >You must accept the terms to continue.</ion-text
+            >
+
+            <ion-button expand="block" type="submit" class="create-account" [disabled]="isSubmitting">
+              <ng-container *ngIf="isSubmitting; else createAccountLabel">Creating account...</ng-container>
+              <ng-template #createAccountLabel>
+                Create account <ion-icon name="arrow-forward-outline"></ion-icon>
+              </ng-template>
+            </ion-button>
+            <ion-text class="form-message" [class.form-error]="hasFormError" role="status" *ngIf="formMessage"
+              >{{ formMessage }}</ion-text
+            >
+          </ion-list>
+        </form>
+
+        <ion-text class="login-link">
+          Already have an account?
+          <ion-button fill="clear" size="small" routerLink="/login">Sign in</ion-button>
+        </ion-text>
+      </ion-card-content>
+    </ion-card>
+  </div>
+</ion-content>

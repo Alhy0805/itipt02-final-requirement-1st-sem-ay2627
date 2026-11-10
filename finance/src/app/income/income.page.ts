@@ -28,6 +28,7 @@ interface Income {
 interface IncomeAccount {
   account_id: number;
   account_name: string;
+  account_types: { account_type_id: number; type_name: string }[];
 }
 
 interface IncomeCategory {
@@ -100,7 +101,7 @@ export class IncomePage implements OnInit {
         income.description,
         income.notes ?? '',
         this.getCategoryName(income.category_id),
-        this.getAccountName(income.account_id),
+        this.getAccountLabel(income.account_id),
       ].some((value) => value.toLowerCase().includes(term)),
     );
   }
@@ -145,10 +146,8 @@ export class IncomePage implements OnInit {
       const requests = [
         fetch(`${this.incomeAPI}/transactionFilter/${userId}/Income`),
         fetch(`${this.incomeAPI}/categories/${userId}`),
+        fetch(`${this.incomeAPI}/accounts/${userId}`),
       ];
-      if (this.accounts.length === 0) {
-        requests.push(fetch(`${this.incomeAPI}/accounts/${userId}`));
-      }
 
       const responses = await Promise.all(requests);
       for (const response of responses) {
@@ -159,7 +158,8 @@ export class IncomePage implements OnInit {
       this.categories = this.uniqueCategories(
         ((await responses[1].json()) as IncomeCategory[]).filter((category) => category.category_type === 'Income'),
       );
-      if (responses[2]) this.accounts = (await responses[2].json()) as IncomeAccount[];
+      this.accounts = (await responses[2].json()) as IncomeAccount[];
+      this.updateCachedAccounts();
       this.updateCachedCategories();
     } catch (error) {
       console.error('Unable to load income:', error);
@@ -263,8 +263,9 @@ export class IncomePage implements OnInit {
     );
   }
 
-  getAccountName(accountId: number): string {
-    return this.accounts.find((account) => Number(account.account_id) === Number(accountId))?.account_name ?? 'Account';
+  getAccountLabel(accountId: number): string {
+    const account = this.accounts.find((item) => Number(item.account_id) === Number(accountId));
+    return account?.account_name ?? 'Unknown account';
   }
 
   private updateCachedTransactions(): void {
@@ -287,6 +288,12 @@ export class IncomePage implements OnInit {
       'finance-resources',
       JSON.stringify({ ...resources, categories: [...otherCategories, ...this.categories] }),
     );
+  }
+
+  private updateCachedAccounts(): void {
+    const savedResources = localStorage.getItem('finance-resources');
+    const resources = savedResources ? (JSON.parse(savedResources) as CachedResources) : {};
+    localStorage.setItem('finance-resources', JSON.stringify({ ...resources, accounts: this.accounts }));
   }
 
   private uniqueCategories(categories: IncomeCategory[]): IncomeCategory[] {

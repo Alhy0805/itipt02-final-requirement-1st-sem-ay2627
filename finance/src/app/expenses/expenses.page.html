@@ -80,7 +80,7 @@
                 <small *ngIf="expense.notes" class="expense-notes">{{ expense.notes }}</small>
               </td>
               <td><span class="category-pill">{{ getCategoryName(expense.category_id) }}</span></td>
-              <td>{{ getAccountName(expense.account_id) }}</td>
+              <td>{{ getAccountLabel(expense.account_id) }}</td>
               <td class="date-cell">{{ expense.transaction_date | date: 'mediumDate' }}</td>
               <td class="amount-column expense-amount">{{ expense.amount | currency: 'PHP' : 'symbol' : '1.2-2' }}</td>
               <td class="actions-column">
@@ -163,7 +163,7 @@
             <select name="account" [(ngModel)]="newExpense.account_id" required>
               <option [ngValue]="null" disabled>Select an account</option>
               <option *ngFor="let account of accounts" [ngValue]="account.account_id">
-                {{ account.account_name }}
+                {{ getAccountLabel(account.account_id) }}
               </option>
             </select>
           </label>

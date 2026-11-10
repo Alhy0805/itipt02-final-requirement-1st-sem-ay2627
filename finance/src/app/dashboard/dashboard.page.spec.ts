@@ -30,6 +30,20 @@ describe('DashboardPage', () => {
     expect(component).toBeTruthy();
   });
 
+  it('sums the stored balances across every account', () => {
+    localStorage.setItem(
+      'finance-resources',
+      JSON.stringify({
+        accounts: [{ balance: '125.00' }, { balance: '500.00' }],
+        transactions: [],
+      }),
+    );
+
+    component.ngOnInit();
+
+    expect(component.totalBalance).toBe(625);
+  });
+
   it('loads dashboard budgets from the budget endpoint and calculates spent amount', async () => {
     const fetchMock = vi.mocked(fetch);
     fetchMock.mockResolvedValueOnce(

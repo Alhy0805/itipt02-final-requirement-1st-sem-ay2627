@@ -206,7 +206,10 @@ export class DashboardPage implements OnInit {
     const resources = savedResources ? JSON.parse(savedResources) : null;
 
     // Dashboard resources
-    this.totalBalance = Number(resources?.accounts?.[0]?.balance ?? 0);
+    this.totalBalance = (resources?.accounts ?? []).reduce(
+      (total: number, account: { balance: number | string }) => total + Number(account.balance ?? 0),
+      0,
+    );
     this.totalIncome = (resources?.transactions ?? [])
       .filter((transaction: { transaction_type: string }) => transaction.transaction_type === 'Income')
       .reduce((total: number, transaction: { amount: number | string }) => total + Number(transaction.amount ?? 0), 0);

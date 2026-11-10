@@ -1,4 +1,3 @@
-
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -27,10 +26,9 @@ import {
   templateUrl: './home.page.html',
   styleUrls: ['./home.page.scss'],
   standalone: true,
-  imports: [IonLabel,CommonModule, FormsModule],
+  imports: [IonLabel, CommonModule, FormsModule],
 })
 export class HomePage implements OnInit {
-
   user_id: number = 0;
   accounts: Account[] = [];
   api: string = '';
@@ -66,11 +64,10 @@ export class HomePage implements OnInit {
         throw new Error(`Request failed: ${response.status}`);
       }
 
-      this.accounts = await response.json() as Account[];
+      this.accounts = (await response.json()) as Account[];
 
       console.log('User ID:', this.user_id);
       console.log('Accounts loaded:', this.accounts);
-
     } catch (error) {
       console.error('Unable to load accounts:', error);
     }
@@ -85,7 +82,8 @@ interface Account {
   account_id: number;
   user_id: number;
   account_name: string;
-  account_type: string;
-  initial_balance: number;
+  account_type_ids: number[];
+  account_types: { account_type_id: number; type_name: string }[];
+  balance: number | string;
   created_at: string;
 }
