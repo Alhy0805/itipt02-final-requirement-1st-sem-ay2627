@@ -1,0 +1,48 @@
+.saving-goals-content {
+  --background: #f6f7fb;
+}
+
+.saving-goals-page {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+
+.page-heading {
+  margin-bottom: 20px;
+}
+
+.page-heading h1 {
+  margin: 0;
+  color: #172033;
+  font-size: 1.8rem;
+}
+
+.goal-form-card,
+.goal-list-card {
+  margin: 0 0 20px;
+  border-radius: 12px;
+}
+
+ion-item {
+  --padding-start: 0;
+  --inner-padding-end: 0;
+}
+
+ion-button[type='submit'] {
+  margin-top: 16px;
+}
+
+.goal-list-card ion-item h2 {
+  margin: 0 0 8px;
+}
+
+.goal-list-card ion-item p {
+  margin: 4px 0;
+}
+
+@media (max-width: 480px) {
+  .saving-goals-page {
+    padding: 20px 12px;
+  }
+}
