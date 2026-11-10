@@ -16,15 +16,16 @@ export const routes: Routes = [
   },
   {
     path: 'finance',
-    loadComponent: () => import('./dashboard/financetracker.page').then((m) => m.FinanceTrackerPage),
+    loadComponent: () => import('./finance/finance.page').then((m) => m.FinancePage),
     children: [
       {
         path: 'dashboard',
         loadComponent: () => import('./dashboard/dashboard.page').then((m) => m.DashboardPage),
       },
       {
-        path: 'transactions',
-        loadComponent: () => import('./transactions/transactions.page').then((m) => m.TransactionsPage),
+        path: 'transaction-management',
+        loadComponent: () =>
+          import('./transaction-management/transaction-management.page').then((m) => m.TransactionManagementPage),
       },
       {
         path: 'income',

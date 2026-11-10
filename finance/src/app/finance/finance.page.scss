@@ -1,34 +1,4 @@
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-.body {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  overflow: hidden;
-}
-
-.dashboard-container {
-  display: grid;
-  width: 100%;
-  grid-template-columns: 300px minmax(0, 1fr);
-  grid-template-areas: 'sidebar main';
-  height: 100%;
-}
-
-.sidebar {
-  grid-area: sidebar;
-  width: 300px;
-  height: 100%;
-  background-color: var(--sidebar-bg);
-}
-
 .main-content {
-  grid-area: main;
   display: flex;
   flex-direction: column;
   background-color: var(--background);
@@ -39,18 +9,31 @@
   overflow: hidden;
 }
 
-.logo {
-  height: 100px;
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+:host ion-split-pane {
+  --side-width: 300px;
+  --side-min-width: 300px;
+  --side-max-width: 300px;
+}
+
+ion-menu {
+  --width: 300px;
+  --background: var(--sidebar-bg);
+}
+
+ion-menu ion-content {
+  --background: var(--sidebar-bg);
+}
+
+ion-menu ion-header ion-toolbar {
+  --background: var(--sidebar-bg);
+  --color: var(--sidebar-text);
 }
 
 .nav-buttons {
   display: flex;
   flex-direction: column;
   align-items: stretch;
+  padding-top: 8px;
 }
 
 .nav-button {
@@ -59,18 +42,13 @@
   --border-radius: 0px;
   --box-shadow: none;
   height: 50px;
+  width: 100%;
+  margin: 0;
 }
 
 .nav-button.active {
   --background: var(--sidebar-active);
   --color: var(--sidebar-text);
-}
-
-.button-label {
-  display: block;
-  width: 100%;
-  text-align: left;
-  font-size: 16px;
 }
 
 .button-content {
@@ -83,12 +61,23 @@
 }
 
 .header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   flex: 0 0 auto;
   padding: 20px;
   background-color: var(--surface);
   color: var(--text-primary);
+}
+
+.header-left {
   display: flex;
-  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.header h1 {
+  margin: 0;
 }
 
 .content {
@@ -99,15 +88,6 @@
 }
 
 @media (max-width: 760px) {
-  .dashboard-container {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas: 'main';
-  }
-
-  .sidebar {
-    display: none;
-  }
-
   .main-content {
     width: 100%;
     min-width: 0;

@@ -1,0 +1,142 @@
+<ion-split-pane contentId="finance-main" when="md">
+  <ion-menu contentId="finance-main" menuId="finance-menu" type="overlay">
+    <ion-header>
+      <ion-toolbar>
+        <ion-title>Menu</ion-title>
+      </ion-toolbar>
+    </ion-header>
+
+    <ion-content>
+      <nav class="nav-buttons" aria-label="Finance navigation">
+        <ion-menu-toggle menu="finance-menu" autoHide="false">
+          <ion-button
+            class="nav-button"
+            routerLink="/finance/dashboard"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: true }"
+          >
+            <span class="button-content">
+              <ion-icon name="home-outline"></ion-icon>
+              <span>Dashboard</span>
+            </span>
+          </ion-button>
+        </ion-menu-toggle>
+
+        <ion-menu-toggle menu="finance-menu" autoHide="false">
+          <ion-button class="nav-button" routerLink="/finance/transaction-management" routerLinkActive="active">
+            <span class="button-content">
+              <ion-icon name="swap-horizontal-outline"></ion-icon>
+              <span>Transaction Management</span>
+            </span>
+          </ion-button>
+        </ion-menu-toggle>
+
+        <ion-menu-toggle menu="finance-menu" autoHide="false">
+          <ion-button class="nav-button" routerLink="/finance/income" routerLinkActive="active">
+            <span class="button-content">
+              <ion-icon name="trending-up-outline"></ion-icon>
+              <span>Income</span>
+            </span>
+          </ion-button>
+        </ion-menu-toggle>
+
+        <ion-menu-toggle menu="finance-menu" autoHide="false">
+          <ion-button class="nav-button" routerLink="/finance/expenses" routerLinkActive="active">
+            <span class="button-content">
+              <ion-icon name="trending-down-outline"></ion-icon>
+              <span>Expenses</span>
+            </span>
+          </ion-button>
+        </ion-menu-toggle>
+
+        <ion-menu-toggle menu="finance-menu" autoHide="false">
+          <ion-button class="nav-button" routerLink="/finance/accounts-and-wallets" routerLinkActive="active">
+            <span class="button-content">
+              <ion-icon name="wallet-outline"></ion-icon>
+              <span>Accounts &amp; Wallets</span>
+            </span>
+          </ion-button>
+        </ion-menu-toggle>
+
+        <ion-menu-toggle menu="finance-menu" autoHide="false">
+          <ion-button class="nav-button" routerLink="/finance/categories" routerLinkActive="active">
+            <span class="button-content">
+              <ion-icon name="pricetags-outline"></ion-icon>
+              <span>Categories</span>
+            </span>
+          </ion-button>
+        </ion-menu-toggle>
+
+        <ion-menu-toggle menu="finance-menu" autoHide="false">
+          <ion-button class="nav-button" routerLink="/finance/budgets" routerLinkActive="active">
+            <span class="button-content">
+              <ion-icon name="pie-chart-outline"></ion-icon>
+              <span>Budgets</span>
+            </span>
+          </ion-button>
+        </ion-menu-toggle>
+
+        <ion-menu-toggle menu="finance-menu" autoHide="false">
+          <ion-button class="nav-button" routerLink="/finance/saving-goals" routerLinkActive="active">
+            <span class="button-content">
+              <ion-icon name="trophy-outline"></ion-icon>
+              <span>Saving Goals</span>
+            </span>
+          </ion-button>
+        </ion-menu-toggle>
+
+        <ion-menu-toggle menu="finance-menu" autoHide="false">
+          <ion-button class="nav-button" routerLink="/finance/recurring-transactions" routerLinkActive="active">
+            <span class="button-content">
+              <ion-icon name="repeat-outline"></ion-icon>
+              <span>Recurring Transactions</span>
+            </span>
+          </ion-button>
+        </ion-menu-toggle>
+
+        <ion-menu-toggle menu="finance-menu" autoHide="false">
+          <ion-button class="nav-button" routerLink="/finance/reports-and-analytics" routerLinkActive="active">
+            <span class="button-content">
+              <ion-icon name="bar-chart-outline"></ion-icon>
+              <span>Reports &amp; Analytics</span>
+            </span>
+          </ion-button>
+        </ion-menu-toggle>
+
+        <ion-menu-toggle menu="finance-menu" autoHide="false">
+          <ion-button class="nav-button" routerLink="/finance/notification" routerLinkActive="active">
+            <span class="button-content">
+              <ion-icon name="notifications-outline"></ion-icon>
+              <span>Notification</span>
+            </span>
+          </ion-button>
+        </ion-menu-toggle>
+
+        <ion-menu-toggle menu="finance-menu" autoHide="false">
+          <ion-button class="nav-button" routerLink="/finance/settings" routerLinkActive="active">
+            <span class="button-content">
+              <ion-icon name="settings-outline"></ion-icon>
+              <span>Settings</span>
+            </span>
+          </ion-button>
+        </ion-menu-toggle>
+      </nav>
+    </ion-content>
+  </ion-menu>
+
+  <div class="main-content ion-page" id="finance-main">
+    <div class="header">
+      <div class="header-left">
+        <ion-menu-button menu="finance-menu"></ion-menu-button>
+        <h1>FINANCE TRACKER</h1>
+      </div>
+      <div class="header-right">
+        <h1>nnnnn</h1>
+      </div>
+    </div>
+
+    <div class="content">
+      <ion-router-outlet></ion-router-outlet>
+    </div>
+  </div>
+</ion-split-pane>

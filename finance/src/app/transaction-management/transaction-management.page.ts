@@ -1,5 +1,6 @@
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ChangeDetectorRef, Component, inject } from '@angular/core';
+import type { OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
   IonIcon,
@@ -30,21 +31,12 @@ interface Transaction {
   notes: string | null;
 }
 
-type TransactionOrder = 'new' | 'old' | 'A-Z' | 'Z-A' | 'highest' | 'lowest';
-
-const ORDER_API_VALUES: Record<TransactionOrder, string> = {
-  new: 'newest',
-  old: 'oldest',
-  'A-Z': 'a-z',
-  'Z-A': 'z-a',
-  highest: 'highest',
-  lowest: 'lowest',
-};
+type TransactionOrder = 'newest' | 'oldest' | 'a-z' | 'z-a' | 'highest' | 'lowest';
 
 @Component({
-  selector: 'app-transactions',
-  templateUrl: './transactions.page.html',
-  styleUrls: ['./transactions.page.scss'],
+  selector: 'app-transaction-management',
+  templateUrl: './transaction-management.page.html',
+  styleUrls: ['./transaction-management.page.scss'],
   imports: [
     IonIcon,
     IonInput,
@@ -66,18 +58,19 @@ const ORDER_API_VALUES: Record<TransactionOrder, string> = {
     IonListHeader,
   ],
 })
-export class TransactionsPage implements OnInit {
+export class TransactionManagementPage implements OnInit {
+  private readonly changeDetector = inject(ChangeDetectorRef);
   user: any = null;
-  userID: string | null = null;
+  userID: any | null = null;
   transaction: Transaction[] = [];
   transactionAPI = '';
-  transaction_type: TransactionOrder = 'new';
+  transaction_type: TransactionOrder = 'newest';
   activeFilter = 'allBtn';
   searchTerm = '';
   loadError = '';
   isLoading = false;
 
-  constructor(readonly changeDetector: ChangeDetectorRef) {
+  constructor() {
     addIcons({ ellipsisVertical, searchCircle, swapVertical });
   }
 
@@ -88,7 +81,7 @@ export class TransactionsPage implements OnInit {
     } else {
       this.user = null;
     }
-    this.userID = this.user.user_id;
+    this.userID = this.user?.user_id ?? null;
 
     if (this.userID) {
       this.filterTransactions('allBtn');
@@ -137,7 +130,7 @@ export class TransactionsPage implements OnInit {
       const params = new URLSearchParams({ search_term: term });
       this.transactionAPI = `http://127.0.0.1:8000/transactionSearch/${this.userID}?${params}`;
     } else {
-      this.transactionAPI = `http://127.0.0.1:8000/transactionFilter/${this.userID}/true/${ORDER_API_VALUES[this.transaction_type]}`;
+      this.transactionAPI = `http://127.0.0.1:8000/transactionFilter/${this.userID}/true/${this.transaction_type}`;
     }
 
     try {
@@ -172,17 +165,17 @@ export class TransactionsPage implements OnInit {
     const sortedTransactions = [...transactions];
 
     switch (this.transaction_type) {
-      case 'new':
+      case 'newest':
         return sortedTransactions.sort(
           (first, second) => new Date(second.transaction_date).getTime() - new Date(first.transaction_date).getTime(),
         );
-      case 'old':
+      case 'oldest':
         return sortedTransactions.sort(
           (first, second) => new Date(first.transaction_date).getTime() - new Date(second.transaction_date).getTime(),
         );
-      case 'A-Z':
+      case 'a-z':
         return sortedTransactions.sort((first, second) => first.description.localeCompare(second.description));
-      case 'Z-A':
+      case 'z-a':
         return sortedTransactions.sort((first, second) => second.description.localeCompare(first.description));
       case 'highest':
         return sortedTransactions.sort((first, second) => Number(second.amount) - Number(first.amount));
