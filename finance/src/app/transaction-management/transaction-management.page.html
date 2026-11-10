@@ -48,10 +48,10 @@
               id="order-select"
               (ionChange)="orderTransactions($event.detail.value)"
             >
-              <ion-select-option value="new">Newest to Oldest</ion-select-option>
-              <ion-select-option value="old">Oldest to Newest</ion-select-option>
-              <ion-select-option value="A-Z">A-Z</ion-select-option>
-              <ion-select-option value="Z-A">Z-A</ion-select-option>
+              <ion-select-option value="newest">Newest to Oldest</ion-select-option>
+              <ion-select-option value="oldest">Oldest to Newest</ion-select-option>
+              <ion-select-option value="a-z">A-Z</ion-select-option>
+              <ion-select-option value="z-a">Z-A</ion-select-option>
               <ion-select-option value="highest">Highest to Lowest</ion-select-option>
               <ion-select-option value="lowest">Lowest to Highest</ion-select-option>
             </ion-select>
@@ -98,6 +98,16 @@
           }
         </div>
       </ion-card-content>
+    </ion-card>
+    <ion-card class="income-card">
+      <ion-card-header>
+        <ion-card-title>Income Management</ion-card-title>
+      </ion-card-header>
+    </ion-card>
+    <ion-card class="expense-card">
+      <ion-card-header>
+        <ion-card-title>Expense Management</ion-card-title>
+      </ion-card-header>
     </ion-card>
   </section>
 </ion-content>

@@ -53,7 +53,7 @@
         <ion-card class="recent-transactions-card">
           <ion-card-header class="dashboard-card-header">
             <ion-card-title>Recent Transactions</ion-card-title>
-            <ion-button class="view-all-button" fill="solid" size="small" routerLink="/finance/transactions">
+            <ion-button class="view-all-button" fill="solid" size="small" routerLink="/finance/transaction-management">
               View All
             </ion-button>
           </ion-card-header>
@@ -111,10 +111,7 @@
                 [color]="getBudgetProgress(budget) >= 1 ? 'danger' : 'primary'"
               ></ion-progress-bar>
             </div>
-            <p
-              class="empty-budget"
-              *ngIf="!budgetLoading && !budgetLoadError && dashboardBudgets.length === 0"
-            >
+            <p class="empty-budget" *ngIf="!budgetLoading && !budgetLoadError && dashboardBudgets.length === 0">
               No budgets found.
             </p>
           </ion-card-content>
