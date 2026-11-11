@@ -8,46 +8,21 @@
       <ion-card-content>
         <div class="transaction-header">
           <div class="search">
-            <ion-searchbar
-              [value]="searchTerm"
-              [debounce]="300"
-              placeholder="Search transactions"
-              show-clear-button="focus"
-              (ionInput)="searchTransactions($event.detail.value)"
-            ></ion-searchbar>
+            <ion-searchbar [value]="searchTerm" [debounce]="300" placeholder="Search transactions"
+              show-clear-button="focus" (ionInput)="searchTransactions($event.detail.value)"></ion-searchbar>
             <div class="btn-group">
-              <ion-button
-                id="allBtn"
-                class="filter btn"
-                [class.active]="activeFilter === 'allBtn'"
-                (click)="filterTransactions('allBtn')"
-                >ALL</ion-button
-              >
-              <ion-button
-                id="incomebtn"
-                class="filter btn"
-                [class.active]="activeFilter === 'incomebtn'"
-                (click)="filterTransactions('incomebtn')"
-                >INCOME</ion-button
-              >
-              <ion-button
-                id="expenseBtn"
-                class="filter btn"
-                [class.active]="activeFilter === 'expenseBtn'"
-                (click)="filterTransactions('expenseBtn')"
-                >EXPENSE</ion-button
-              >
+              <ion-button id="allBtn" class="filter btn" [class.active]="activeFilter === 'allBtn'"
+                (click)="filterTransactions('allBtn')">ALL</ion-button>
+              <ion-button id="incomebtn" class="filter btn" [class.active]="activeFilter === 'incomebtn'"
+                (click)="filterTransactions('incomebtn')">INCOME</ion-button>
+              <ion-button id="expenseBtn" class="filter btn" [class.active]="activeFilter === 'expenseBtn'"
+                (click)="filterTransactions('expenseBtn')">EXPENSE</ion-button>
             </div>
           </div>
           <div class="order-control">
             <ion-icon name="swap-vertical" aria-hidden="true"></ion-icon>
-            <ion-select
-              aria-label="Order transactions"
-              interface="popover"
-              [value]="transaction_type"
-              id="order-select"
-              (ionChange)="orderTransactions($event.detail.value)"
-            >
+            <ion-select aria-label="Order transactions" interface="popover" [value]="transaction_type" id="order-select"
+              (ionChange)="orderTransactions($event.detail.value)">
               <ion-select-option value="newest">Newest to Oldest</ion-select-option>
               <ion-select-option value="oldest">Oldest to Newest</ion-select-option>
               <ion-select-option value="a-z">A-Z</ion-select-option>
@@ -78,11 +53,8 @@
                 <tr>
                   <td class="description-cell">{{ item.description }}</td>
                   <td>
-                    <span
-                      class="transaction-type"
-                      [class.income]="item.transaction_type === 'Income'"
-                      [class.expense]="item.transaction_type === 'Expense'"
-                    >
+                    <span class="transaction-type" [class.income]="item.transaction_type === 'Income'"
+                      [class.expense]="item.transaction_type === 'Expense'">
                       {{ item.transaction_type }}
                     </span>
                   </td>
@@ -102,12 +74,54 @@
     <ion-card class="income-card">
       <ion-card-header>
         <ion-card-title>Income Management</ion-card-title>
+        <ion-card-content>
+          <div class="transaction-form-select-container">
+             <div class="income-inputs-wrapper">
+            <ion-label>Category</ion-label>
+            <ion-select placeholder="Select Category" interface="popover">
+              <ion-select-option value=""></ion-select-option>
+            </ion-select>
+          </div>
+          <div class="income-inputs-wrapper">
+            <ion-label>Transaction Type</ion-label>
+            <ion-select placeholder="Select Type" interface="popover">
+              <ion-select-option value="income">Income</ion-select-option>
+              <ion-select-option value="expense">Expense</ion-select-option>
+            </ion-select>
+          </div>
+          <div class="income-inputs-wrapper">
+            <ion-label>Wallets</ion-label>
+            <ion-select placeholder="Select Wallet" interface="popover">
+              <ion-select-option value=""></ion-select-option>
+            </ion-select>
+          </div>
+          </div>
+          <div class="income-inputs-wrapper">
+            <ion-label>Description</ion-label>
+            <ion-input class="income-inputs" type="text" placeholder="e.g. Monthly Salary"></ion-input>
+          </div>
+          <div class="income-inputs-wrapper">
+            <ion-label>Amount</ion-label>
+            <ion-input class="income-inputs" type="number" placeholder="P 0.0"></ion-input>
+          </div>
+          <div class="income-inputs-wrapper">
+            <ion-label>Date</ion-label>
+            <ion-input class="income-inputs" type="date"></ion-input>
+          </div>
+          <div class="income-inputs-wrapper">
+            <ion-label>Notes</ion-label>
+            <ion-input class="income-inputs" type="text" placeholder="Add a note optional"></ion-input>
+          </div>
+        </ion-card-content>
       </ion-card-header>
     </ion-card>
     <ion-card class="expense-card">
       <ion-card-header>
         <ion-card-title>Expense Management</ion-card-title>
       </ion-card-header>
+      <ion-card-content>
+
+      </ion-card-content>
     </ion-card>
   </section>
 </ion-content>
