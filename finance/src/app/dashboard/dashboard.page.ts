@@ -17,6 +17,7 @@ import {
 import { RouterLink } from '@angular/router';
 import { addIcons } from 'ionicons';
 import { pieChartOutline, trendingDownOutline, trendingUpOutline, walletOutline } from 'ionicons/icons';
+import { MainService } from '../services/main-service';
 
 interface DashboardBudget {
   category_id: number | string;
@@ -143,7 +144,7 @@ export class DashboardPage implements OnInit {
     return targetAmount > 0 ? Math.min(this.getGoalSavedAmount(goal) / targetAmount, 1) : 0;
   }
 
-  constructor(private readonly changeDetector: ChangeDetectorRef) {
+  constructor(private readonly changeDetector: ChangeDetectorRef, private mainService: MainService) {
     addIcons({
       pieChartOutline,
       trendingDownOutline,
