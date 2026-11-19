@@ -90,6 +90,24 @@
   flex-direction: column;
 }
 
+.expense-card ion-card-content,
+.income-card ion-card-content{
+  display: flex;
+  flex-direction: column;
+}
+.income-card ion-list ion-item{
+  gap: 10px;
+}
+.income-inputs{
+  --border: 1px solid #ccc;
+  --border-radius: 8px;
+  --padding-start: 12px;
+  --padding-end: 12px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  flex: 1;
+}
+
 .list-container {
   flex: 2 1 0;
   min-width: 0;
@@ -99,6 +117,16 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+.transaction-form-select-container {
+  display: flex;
+  justify-content: space-between;
+  flex: 1;
+}
+
+.transaction-form-select-container.income-inputs{
+  flex: 1;
 }
 
 .list-container ion-card-content {
@@ -248,3 +276,4 @@
     font-size: 0.82rem;
   }
 }
+

@@ -18,8 +18,7 @@ import {
   IonSelectOption,
   IonList,
   IonHeader,
-  IonListHeader,
-} from '@ionic/angular';
+  IonListHeader, IonLabel } from '@ionic/angular';
 import { addIcons } from 'ionicons';
 import { ellipsisVertical, searchCircle, swapVertical } from 'ionicons/icons';
 
@@ -37,7 +36,7 @@ type TransactionOrder = 'newest' | 'oldest' | 'a-z' | 'z-a' | 'highest' | 'lowes
   selector: 'app-transaction-management',
   templateUrl: './transaction-management.page.html',
   styleUrls: ['./transaction-management.page.scss'],
-  imports: [
+  imports: [IonLabel, 
     IonIcon,
     IonInput,
     IonContent,
