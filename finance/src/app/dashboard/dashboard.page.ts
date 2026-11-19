@@ -69,14 +69,15 @@ export class DashboardPage implements OnInit {
   }
 
   async ionViewWillEnter() {
-    const [income, expenses] = await Promise.all([
+    const [income, expenses, balance] = await Promise.all([
       this.mainService.getTotalIncome(),
       this.mainService.getTotalExpense(),
+      this.mainService.getTotalBalance(),
     ]);
 
     this.income = income;
     this.expenses = expenses;
-    this.balance = this.mainService.getTotalBalance() - expenses;
+    this.balance = balance;
 
     this.changeDetector.detectChanges();
   }
