@@ -1,10 +1,10 @@
-<ion-content [fullscreen]="true">
+<ion-content fullscreen>
   <section class="dashboard-content">
     <div class="dashboard-left">
       <div class="dashboard-time">
         <div class="dashboard-greet">
-          <h1>{{ greeting }}, {{ user?.full_name }}!</h1>
-          <h3>Here's your financial for {{ currentMonth }} {{ currentYear }}</h3>
+          <h1>Good morning, Alex!</h1>
+          <h3>Here's your financial overview for November 2026</h3>
         </div>
       </div>
       <div class="dashboard-quick-report">
@@ -13,7 +13,7 @@
             <div class="report-icon"><ion-icon name="wallet-outline" aria-hidden="true"></ion-icon></div>
             <div class="report-details">
               <p>Balance</p>
-              <h2>P{{ totalBalance | number:'1.2-2' }}</h2>
+              <h2>{{ balance | currency:'PHP' }}</h2>
             </div>
           </ion-card-content>
         </ion-card>
@@ -23,7 +23,7 @@
             <div class="report-icon"><ion-icon name="trending-up-outline" aria-hidden="true"></ion-icon></div>
             <div class="report-details">
               <p>Income</p>
-              <h2>P{{ totalIncome | number:'1.2-2' }}</h2>
+              <h2>{{ income | currency: 'PHP' }}</h2>
             </div>
           </ion-card-content>
         </ion-card>
@@ -33,7 +33,7 @@
             <div class="report-icon"><ion-icon name="trending-down-outline" aria-hidden="true"></ion-icon></div>
             <div class="report-details">
               <p>Expenses</p>
-              <h2>P{{ totalExpenses | number:'1.2-2' }}</h2>
+              <h2>{{ expenses | currency: 'PHP' }}</h2>
             </div>
           </ion-card-content>
         </ion-card>
@@ -43,7 +43,7 @@
             <div class="report-icon"><ion-icon name="pie-chart-outline" aria-hidden="true"></ion-icon></div>
             <div class="report-details">
               <p>Remaining Budget</p>
-              <h2>P{{ totalRemainingBudget | number:'1.2-2' }}</h2>
+              <h2>₱8,450.00</h2>
             </div>
           </ion-card-content>
         </ion-card>
@@ -58,62 +58,41 @@
             </ion-button>
           </ion-card-header>
           <ion-list>
-            <ion-item *ngFor="let transaction of recentTransactions">
+            <ion-item>
               <ion-label>
-                <h3>{{ transaction.description }}</h3>
-                <p>
-                  <span
-                    [class.income-amount]="transaction.transaction_type === 'Income'"
-                    [class.expense-amount]="transaction.transaction_type === 'Expense'"
-                    >{{ transaction.transaction_type }}</span
-                  >
-                  · {{ transaction.transaction_date | date:'mediumDate' }}
-                </p>
+                <h3>Grocery shopping</h3>
+                <p><span class="expense-amount">Expense</span> · Nov 18, 2026</p>
               </ion-label>
-              <ion-note
-                slot="end"
-                [class.income-amount]="transaction.transaction_type === 'Income'"
-                [class.expense-amount]="transaction.transaction_type === 'Expense'"
-              >
-                ₱{{ transaction.amount | number:'1.2-2' }}
-              </ion-note>
+              <ion-note slot="end" class="expense-amount">₱2,350.00</ion-note>
             </ion-item>
-            <ion-item *ngIf="recentTransactions.length === 0">
-              <ion-label>No transactions yet.</ion-label>
+            <ion-item>
+              <ion-label>
+                <h3>Monthly salary</h3>
+                <p><span class="income-amount">Income</span> · Nov 15, 2026</p>
+              </ion-label>
+              <ion-note slot="end" class="income-amount">₱42,000.00</ion-note>
             </ion-item>
           </ion-list>
         </ion-card>
 
         <ion-card class="monthly-budgets-card">
           <ion-card-header class="dashboard-card-header">
-            <ion-card-title>{{ budgetCardTitle }}</ion-card-title>
+            <ion-card-title>Monthly Budgets</ion-card-title>
             <ion-button class="view-all-button" fill="solid" size="small" routerLink="/finance/budgets">
               View All
             </ion-button>
           </ion-card-header>
           <ion-card-content>
-            <p class="empty-budget" *ngIf="budgetLoading && dashboardBudgets.length === 0">Loading budgets...</p>
-            <p class="empty-budget" role="alert" *ngIf="budgetLoadError">
-              Could not refresh budgets: {{ budgetLoadError }}
-            </p>
-            <div class="monthly-budget" *ngFor="let budget of dashboardBudgets">
+            <div class="monthly-budget">
               <div class="monthly-budget-heading">
                 <div>
-                  <strong>{{ budget.budget_name }}</strong>
-                  <small>{{ budget.start_date }} – {{ budget.end_date }}</small>
+                  <strong>Food and groceries</strong>
+                  <small>Nov 1, 2026 – Nov 30, 2026</small>
                 </div>
-                <span>
-                  ₱{{ getBudgetSpent(budget) | number:'1.0-2' }} / ₱{{ budget.budget_amount | number:'1.0-2' }}
-                </span>
+                <span>₱4,250 / ₱10,000</span>
               </div>
-              <ion-progress-bar
-                [value]="getBudgetProgress(budget)"
-                [color]="getBudgetProgress(budget) >= 1 ? 'danger' : 'primary'"
-              ></ion-progress-bar>
+              <ion-progress-bar value="0.425" color="primary"></ion-progress-bar>
             </div>
-            <p class="empty-budget" *ngIf="!budgetLoading && !budgetLoadError && dashboardBudgets.length === 0">
-              No budgets found.
-            </p>
           </ion-card-content>
         </ion-card>
       </div>
@@ -127,18 +106,14 @@
           </ion-button>
         </ion-card-header>
         <ion-card-content>
-          <div class="saving-goal" *ngFor="let goal of savingsGoals | slice: 0 : 3">
+          <div class="saving-goal">
             <div class="saving-goal-heading">
-              <strong>{{ goal.goal_name }}</strong>
-              <span>{{ getGoalProgress(goal) | percent:'1.0-0' }}</span>
+              <strong>New laptop</strong>
+              <span>60%</span>
             </div>
-            <p>₱{{ getGoalSavedAmount(goal) | number:'1.0-2' }} saved of ₱{{ goal.target_amount | number:'1.0-2' }}</p>
-            <ion-progress-bar
-              [value]="getGoalProgress(goal)"
-              [color]="getGoalProgress(goal) >= 1 ? 'success' : 'primary'"
-            ></ion-progress-bar>
+            <p>₱30,000 saved of ₱50,000</p>
+            <ion-progress-bar value="0.6" color="primary"></ion-progress-bar>
           </div>
-          <p class="empty-goals" *ngIf="savingsGoals.length === 0">No saving goals yet.</p>
         </ion-card-content>
       </ion-card>
 
@@ -150,15 +125,12 @@
           </ion-button>
         </ion-card-header>
         <ion-list>
-          <ion-item *ngFor="let bill of upcomingBills">
+          <ion-item>
             <ion-label>
-              <h3>{{ bill.bill_name }}</h3>
-              <p>Due {{ bill.due_date | date:'mediumDate' }}</p>
+              <h3>Electricity bill</h3>
+              <p>Due Nov 25, 2026</p>
             </ion-label>
-            <ion-note slot="end">₱{{ bill.amount | number:'1.2-2' }}</ion-note>
-          </ion-item>
-          <ion-item *ngIf="upcomingBills.length === 0">
-            <ion-label>No upcoming bills.</ion-label>
+            <ion-note slot="end">₱2,100.00</ion-note>
           </ion-item>
         </ion-list>
       </ion-card>
