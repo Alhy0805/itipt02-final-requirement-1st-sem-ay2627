@@ -21,16 +21,8 @@ import {
   IonListHeader, IonLabel } from '@ionic/angular';
 import { addIcons } from 'ionicons';
 import { ellipsisVertical, searchCircle, swapVertical } from 'ionicons/icons';
-
-interface Transaction {
-  transaction_type: string;
-  amount: number;
-  description: string;
-  transaction_date: string;
-  notes: string | null;
-}
-
-type TransactionOrder = 'newest' | 'oldest' | 'a-z' | 'z-a' | 'highest' | 'lowest';
+import { MainService } from '../services/main-service';
+import type { Transaction, TransactionFilter, TransactionOrder } from '../services/main-service';
 
 @Component({
   selector: 'app-transaction-management',
@@ -59,10 +51,10 @@ type TransactionOrder = 'newest' | 'oldest' | 'a-z' | 'z-a' | 'highest' | 'lowes
 })
 export class TransactionManagementPage implements OnInit {
   private readonly changeDetector = inject(ChangeDetectorRef);
+  private readonly mainService = inject(MainService);
   user: any = null;
   userID: any | null = null;
   transaction: Transaction[] = [];
-  transactionAPI = '';
   transaction_type: TransactionOrder = 'newest';
   activeFilter = 'allBtn';
   searchTerm = '';
@@ -117,69 +109,26 @@ export class TransactionManagementPage implements OnInit {
     this.loadError = '';
     this.isLoading = true;
 
-    let type: string | null = null;
-    if (this.activeFilter === 'incomebtn') {
-      type = 'Income';
-    } else if (this.activeFilter === 'expenseBtn') {
-      type = 'Expense';
-    }
-
-    const term = this.searchTerm.trim();
-    if (term) {
-      const params = new URLSearchParams({ search_term: term });
-      this.transactionAPI = `http://127.0.0.1:8000/transactionSearch/${this.userID}?${params}`;
-    } else {
-      this.transactionAPI = `http://127.0.0.1:8000/transactionFilter/${this.userID}/true/${this.transaction_type}`;
-    }
+    const filter: TransactionFilter =
+      this.activeFilter === 'incomebtn'
+        ? 'Income'
+        : this.activeFilter === 'expenseBtn'
+          ? 'Expense'
+          : 'all';
 
     try {
-      const response = await fetch(this.transactionAPI);
-      if (!response.ok) {
-        throw new Error(`Request failed: ${response.status}`);
-      }
-
-      const transactions: Transaction[] = await response.json();
-
-      let filteredTransactions: Transaction[];
-
-      if (type) {
-        filteredTransactions = transactions.filter((item) => {
-          return item.transaction_type === type;
-        });
-      } else {
-        filteredTransactions = transactions;
-      }
-
-      this.transaction = this.sortTransactions(filteredTransactions);
+      this.transaction = await this.mainService.filterTransactionData(
+        this.userID,
+        filter,
+        this.transaction_type,
+        this.searchTerm,
+      );
     } catch (error) {
       this.loadError = error instanceof Error ? error.message : 'Could not load transactions.';
       console.error('Failed to load transactions:', error);
     } finally {
       this.isLoading = false;
       this.changeDetector.detectChanges();
-    }
-  }
-
-  sortTransactions(transactions: Transaction[]): Transaction[] {
-    const sortedTransactions = [...transactions];
-
-    switch (this.transaction_type) {
-      case 'newest':
-        return sortedTransactions.sort(
-          (first, second) => new Date(second.transaction_date).getTime() - new Date(first.transaction_date).getTime(),
-        );
-      case 'oldest':
-        return sortedTransactions.sort(
-          (first, second) => new Date(first.transaction_date).getTime() - new Date(second.transaction_date).getTime(),
-        );
-      case 'a-z':
-        return sortedTransactions.sort((first, second) => first.description.localeCompare(second.description));
-      case 'z-a':
-        return sortedTransactions.sort((first, second) => second.description.localeCompare(first.description));
-      case 'highest':
-        return sortedTransactions.sort((first, second) => Number(second.amount) - Number(first.amount));
-      case 'lowest':
-        return sortedTransactions.sort((first, second) => Number(first.amount) - Number(second.amount));
     }
   }
 }
