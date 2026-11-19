@@ -1,3 +1,4 @@
+
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -71,26 +72,18 @@ export class LoginPage {
     return this.password.length >= 6;
   }
 
- // async signIn(): Promise<void> {
- // this.formSubmitted = true;
- // if (!this.isEmailValid || !this.isPasswordValid || this.isSubmitting) return;
-//
-  //  this.isSubmitting = true;
-  //  
-  //  await new Promise((resolve) => setTimeout(resolve, 500));
-//await this.router.navigateByUrl('/home');
-  //  this.isSubmitting = false;
-  //}
-
   async signIn(): Promise<void> {
     this.formSubmitted = true;
     this.errorMessage = '';
+
     if (!this.email || !this.password) {
       this.errorMessage = 'Enter your email and password.';
       this.openFeedback('Missing details', this.errorMessage);
       return;
     }
+
     if (!this.isEmailValid || !this.isPasswordValid || this.isSubmitting) return;
+
     this.isSubmitting = true;
     await new Promise((resolve) => setTimeout(resolve, 500));
 
@@ -119,9 +112,11 @@ export class LoginPage {
         this.openFeedback('Login failed', this.errorMessage);
         return;
       }
+
       const resourcesResponse = await fetch(
         `http://127.0.0.1:8000/resources/${data.user.user_id}`,
       );
+
       const resources = await resourcesResponse.json();
 
       if (!resourcesResponse.ok) {
@@ -130,11 +125,13 @@ export class LoginPage {
         );
       }
 
+      // Store current user's data only
       localStorage.setItem('finance-user', JSON.stringify(data.user));
       localStorage.setItem('finance-resources', JSON.stringify(resources));
+
       this.errorMessage = '';
 
-      //redirection
+      // redirection
       await this.router.navigateByUrl('/finance/dashboard', { replaceUrl: true });
 
     } catch (error) {
@@ -142,6 +139,7 @@ export class LoginPage {
       this.errorMessage =
         error instanceof Error ? error.message : 'Cannot connect to the backend';
       this.openFeedback('Connection error', this.errorMessage);
+
     } finally {
       this.isSubmitting = false;
     }
