@@ -53,7 +53,7 @@
                 min="0.01"
                 step="0.01"
                 [(ngModel)]="newBudget.budget_amount"
-                placeholder="0.00"
+                placeholder="Enter amount"
                 required
               ></ion-input>
             </label>
@@ -66,15 +66,37 @@
                 </option>
               </select>
             </label>
-            <label>
+            <div class="date-field">
               <span>Start date</span>
-              <ion-input name="start_date" type="date" [(ngModel)]="newBudget.start_date" required></ion-input>
-            </label>
-            <label>
+              <ion-datetime-button datetime="budget-start-date"></ion-datetime-button>
+            </div>
+            <div class="date-field">
               <span>End date</span>
-              <ion-input name="end_date" type="date" [(ngModel)]="newBudget.end_date" required></ion-input>
-            </label>
+              <ion-datetime-button datetime="budget-end-date"></ion-datetime-button>
+            </div>
           </div>
+          <ion-modal [keepContentsMounted]="true">
+            <ng-template>
+              <ion-datetime
+                id="budget-start-date"
+                presentation="date"
+                [value]="newBudget.start_date || getToday()"
+                [max]="newBudget.end_date || undefined"
+                (ionChange)="setStartDate($event)"
+              ></ion-datetime>
+            </ng-template>
+          </ion-modal>
+          <ion-modal [keepContentsMounted]="true">
+            <ng-template>
+              <ion-datetime
+                id="budget-end-date"
+                presentation="date"
+                [value]="newBudget.end_date || newBudget.start_date || getToday()"
+                [min]="newBudget.start_date || undefined"
+                (ionChange)="setEndDate($event)"
+              ></ion-datetime>
+            </ng-template>
+          </ion-modal>
           <div class="form-actions">
             <ion-button fill="clear" type="button" (click)="resetForm()">Cancel</ion-button>
             <ion-button
