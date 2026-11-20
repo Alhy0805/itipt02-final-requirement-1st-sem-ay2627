@@ -96,7 +96,7 @@ export class DashboardPage implements OnInit {
 
     this.income = income;
     this.expenses = expenses;
-    this.balance = balance - expenses;
+    this.balance = balance;
     this.recentTransactions = transactions.slice(0, 3);
 
     await this.loadMonthlyBudgets(userId, transactions);
