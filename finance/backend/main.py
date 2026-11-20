@@ -1164,6 +1164,119 @@ def budget(user_id: int,):
 @app.get("/.well-known/appspecific/com.chrome.devtools.json")
 async def chrome_devtools():
     return Response(status_code=204)
+
+
+def updateTransaction(
+    user_id: int,
+    transaction_id: int,
+    transaction: Income | Expense,
+    transaction_type: str,
+):
+    description = transaction.description.strip()
+    if not description:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Description cannot be blank.",
+        )
+
+    conn = get_connected()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute(
+            """
+            SELECT transaction_id
+            FROM transactions
+            WHERE transaction_id = %s
+              AND user_id = %s
+              AND transaction_type = %s
+            FOR UPDATE
+            """,
+            (transaction_id, user_id, transaction_type),
+        )
+        if cursor.fetchone() is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"{transaction_type} entry not found.",
+            )
+
+        cursor.execute(
+            "SELECT account_id FROM accounts WHERE account_id = %s AND user_id = %s",
+            (transaction.account_id, user_id),
+        )
+        if cursor.fetchone() is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Account not found for this user.",
+            )
+
+        if transaction.category_id is not None:
+            cursor.execute(
+                """
+                SELECT category_id FROM categories
+                WHERE category_id = %s
+                  AND category_type = %s
+                  AND (user_id IS NULL OR user_id = %s)
+                """,
+                (transaction.category_id, transaction_type, user_id),
+            )
+            if cursor.fetchone() is None:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"{transaction_type} category not found for this user.",
+                )
+
+        cursor.execute(
+            """
+            UPDATE transactions
+            SET account_id = %s,
+                category_id = %s,
+                amount = %s,
+                description = %s,
+                transaction_date = %s,
+                notes = %s
+            WHERE transaction_id = %s
+              AND user_id = %s
+              AND transaction_type = %s
+            """,
+            (
+                transaction.account_id,
+                transaction.category_id,
+                transaction.amount,
+                description,
+                transaction.transaction_date,
+                transaction.notes,
+                transaction_id,
+                user_id,
+                transaction_type,
+            ),
+        )
+        conn.commit()
+
+        cursor.execute(
+            """
+            SELECT transaction_id, user_id, account_id, category_id,
+                   transaction_type, amount, description,
+                   transaction_date, notes, created_at
+            FROM transactions
+            WHERE transaction_id = %s AND user_id = %s
+            """,
+            (transaction_id, user_id),
+        )
+        updated_transaction = cursor.fetchone()
+        if updated_transaction is None:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"{transaction_type} was updated but could not be loaded.",
+            )
+        return updated_transaction
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        cursor.close()
+        conn.close()
+
+
 ##income
 @app.post("/addincome/{user_id}", status_code=status.HTTP_201_CREATED)
 def addIncome(user_id: int, income: Income):
@@ -1249,6 +1362,11 @@ def addIncome(user_id: int, income: Income):
     finally:
         cursor.close()
         conn.close()
+
+
+@app.put("/income/{user_id}/{transaction_id}")
+def updateIncome(user_id: int, transaction_id: int, income: Income):
+    return updateTransaction(user_id, transaction_id, income, "Income")
 
 
 @app.delete("/income/{user_id}/{transaction_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -1360,6 +1478,11 @@ def addExpense(user_id: int, expense: Expense):
     finally:
         cursor.close()
         conn.close()
+
+
+@app.put("/expense/{user_id}/{transaction_id}")
+def updateExpense(user_id: int, transaction_id: int, expense: Expense):
+    return updateTransaction(user_id, transaction_id, expense, "Expense")
 
 
 @app.delete("/expense/{user_id}/{transaction_id}", status_code=status.HTTP_204_NO_CONTENT)

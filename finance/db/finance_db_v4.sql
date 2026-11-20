@@ -25,7 +25,7 @@ DELIMITER $$
 --
 -- Functions
 --
-CREATE DEFINER=`root`@`localhost` FUNCTION `txn_signed_amount` (`t_type` VARCHAR(20), `t_amount` DECIMAL(12,2)) RETURNS DECIMAL(12,2) DETERMINISTIC BEGIN
+CREATE FUNCTION `txn_signed_amount` (`t_type` VARCHAR(20), `t_amount` DECIMAL(12,2)) RETURNS DECIMAL(12,2) DETERMINISTIC BEGIN
   RETURN CASE
     WHEN t_type IN ('Income', 'Transfer In')   THEN  t_amount
     WHEN t_type IN ('Expense', 'Transfer Out') THEN -t_amount

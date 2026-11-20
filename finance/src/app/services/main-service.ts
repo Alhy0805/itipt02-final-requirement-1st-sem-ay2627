@@ -39,15 +39,14 @@ export class MainService {
     }
 
 
-    getTotalBalance() {
-        const data = this.getLocalStorageData();
-        const accounts = data?.accounts ?? [];
+    async getTotalBalance(): Promise<number> {
+        const response = await fetch(`${this.API}/accounts/${this.getUserId()}`);
+        if (!response.ok) {
+            throw new Error(`Could not load accounts (${response.status}).`);
+        }
 
-        return accounts.reduce(
-            (total: number, account: any) =>
-                total + Number(account.balance),
-            0
-        );
+        const accounts: { balance: number | string }[] = await response.json();
+        return accounts.reduce((total, account) => total + Number(account.balance), 0);
     }
 
 
