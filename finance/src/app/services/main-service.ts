@@ -1,9 +1,17 @@
 
 import { Injectable } from '@angular/core';
 
-interface Transaction {
+export interface Transaction {
     amount: number | string;
+    transaction_type: string;
+    description: string;
+    transaction_date: string;
+    notes: string | null;
+    category_id?: number | string;
 }
+
+export type TransactionFilter = 'all' | 'Income' | 'Expense';
+export type TransactionOrder = 'newest' | 'oldest' | 'a-z' | 'z-a' | 'highest' | 'lowest';
 
 export interface Budget {
     budget_id?: number;
@@ -64,14 +72,55 @@ export class MainService {
 
 
 
-    async filterTransactionData(userId: number | string, filter: string): Promise<Transaction[]> {
-        const url = `${this.API}/transactionFilter/${encodeURIComponent(userId)}/${encodeURIComponent(filter)}`;
+    async filterTransactionData(
+        userId: number | string,
+        filter: TransactionFilter = 'all',
+        order: TransactionOrder = 'newest',
+        searchTerm = '',
+    ): Promise<Transaction[]> {
+        const encodedUserId = encodeURIComponent(userId);
+        const search = searchTerm.trim();
+        const url = search
+            ? `${this.API}/transactionSearch/${encodedUserId}?${new URLSearchParams({ search_term: search })}`
+            : `${this.API}/transactionFilter/${encodedUserId}/true/${order}`;
         const response = await fetch(url);
 
         if (!response.ok) {
             throw new Error(`Could not load transactions (${response.status}).`);
         }
-        return response.json();
+
+        const transactions: unknown = await response.json();
+        if (!Array.isArray(transactions)) {
+            throw new Error('The transaction API returned an invalid response.');
+        }
+
+        const normalizedFilter = filter.toLowerCase();
+        const filteredTransactions = (transactions as Transaction[]).filter(
+            (transaction) =>
+                normalizedFilter === 'all' ||
+                transaction.transaction_type.toLowerCase() === normalizedFilter,
+        );
+
+        return this.sortTransactions(filteredTransactions, order);
+    }
+
+    private sortTransactions(transactions: Transaction[], order: TransactionOrder): Transaction[] {
+        return [...transactions].sort((first, second) => {
+            switch (order) {
+                case 'newest':
+                    return new Date(second.transaction_date).getTime() - new Date(first.transaction_date).getTime();
+                case 'oldest':
+                    return new Date(first.transaction_date).getTime() - new Date(second.transaction_date).getTime();
+                case 'a-z':
+                    return first.description.localeCompare(second.description);
+                case 'z-a':
+                    return second.description.localeCompare(first.description);
+                case 'highest':
+                    return Number(second.amount) - Number(first.amount);
+                case 'lowest':
+                    return Number(first.amount) - Number(second.amount);
+            }
+        });
     }
 
     async getTotalIncome(): Promise<number> {
