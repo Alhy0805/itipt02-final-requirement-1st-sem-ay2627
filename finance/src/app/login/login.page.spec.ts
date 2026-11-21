@@ -1,4 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
+import { provideRouter, Router, RouterLink } from '@angular/router';
 import { ToastController } from '@ionic/angular';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { LoginPage } from './login.page';
@@ -13,7 +15,7 @@ describe('LoginPage', () => {
       create: vi.fn().mockResolvedValue({ present: vi.fn().mockResolvedValue(undefined) }),
     };
     TestBed.configureTestingModule({
-      providers: [{ provide: ToastController, useValue: toastControllerMock }],
+      providers: [provideRouter([]), { provide: ToastController, useValue: toastControllerMock }],
     });
     fixture = TestBed.createComponent(LoginPage);
     component = fixture.componentInstance;
@@ -26,6 +28,13 @@ describe('LoginPage', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('links the create-account button to signup', () => {
+    const router = TestBed.inject(Router);
+    const link = fixture.debugElement.query(By.directive(RouterLink)).injector.get(RouterLink);
+
+    expect(router.serializeUrl(link.urlTree!)).toBe('/signup');
   });
 
   it('shows a toast when the backend rejects the credentials', async () => {

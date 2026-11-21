@@ -62,12 +62,10 @@
             <ion-text *ngIf="isSubmitting" class="button-loading"><ion-text></ion-text>Signing in...</ion-text>
           </ion-button>
         </ion-list>
-        <ion-text class="register"
-          >Don&rsquo;t have an account?
-          <ion-button fill="clear" size="small" href="#register" (click)="$event.preventDefault()"
-            >Create account</ion-button
-          ></ion-text
-        >
+        <div class="register">
+          <span>Don&rsquo;t have an account?</span>
+          <ion-button fill="clear" size="small" routerLink="/signup">Create account</ion-button>
+        </div>
       </ion-card-content>
     </ion-card>
   </div>

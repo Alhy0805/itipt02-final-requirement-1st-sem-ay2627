@@ -2,7 +2,7 @@
 import { ChangeDetectorRef, Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import {
   IonButton,
   IonAlert,
@@ -46,6 +46,7 @@ import {
     IonNote,
     IonRow,
     IonText,
+    RouterLink,
     CommonModule,
     FormsModule,
   ],
