@@ -77,11 +77,18 @@ export class TransactionManagementPage {
   }
 
   get categoriesForTransactionType(): any[] {
-    if (!this.transactionType) return [];
-    return this.categories.filter(
-      (category) => category.category_type?.toLowerCase() === this.transactionType,
-    );
-  }
+    return this.categories
+        .filter(category => category.category_type?.toLowerCase() === this.transactionType)
+        .sort((a, b) => {
+            const aOther = a.category_name.toLowerCase().startsWith('other');
+            const bOther = b.category_name.toLowerCase().startsWith('other');
+
+            if (aOther && !bOther) return 1;
+            if (!aOther && bOther) return -1;
+
+            return a.category_name.localeCompare(b.category_name);
+        });
+      }
 
   private getToday(): string {
     const today = new Date();
