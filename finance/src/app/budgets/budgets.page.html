@@ -61,7 +61,7 @@
               <span>Category</span>
               <select class="category-select" name="category_id" [(ngModel)]="newBudget.category_id" required>
                 <option [ngValue]="0" disabled>Select a category</option>
-                <option *ngFor="let category of categories" [ngValue]="category.category_id">
+                <option *ngFor="let category of expenseCategories" [ngValue]="category.category_id">
                   {{ category.category_name }}
                 </option>
               </select>
@@ -101,13 +101,15 @@
             <ion-button fill="clear" type="button" (click)="resetForm()">Cancel</ion-button>
             <ion-button
               type="submit"
-              [disabled]="budgetForm.invalid || isSaving || !categories.length || !newBudget.category_id"
+              [disabled]="budgetForm.invalid || isSaving || !expenseCategories.length || !newBudget.category_id"
             >
               {{ isSaving ? 'Saving…' : editingBudgetId ? 'Save changes' : 'Save budget' }}
             </ion-button>
           </div>
         </form>
-        <p class="form-hint" *ngIf="!isLoading && !categories.length">Create a category before adding a budget.</p>
+        <p class="form-hint" *ngIf="!isLoading && !expenseCategories.length">
+          Create an expense category before adding a budget.
+        </p>
       </ion-card-content>
     </ion-card>
 

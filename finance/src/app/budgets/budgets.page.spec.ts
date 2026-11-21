@@ -83,6 +83,17 @@ describe('BudgetsPage', () => {
     expect(component.newBudget.budget_amount).toBe('');
   });
 
+  it('provides only expense categories for the budget category selector', () => {
+    component.categories = [
+      { category_id: 3, category_name: 'Food', category_type: 'Expense' },
+      { category_id: 4, category_name: 'Salary', category_type: 'Income' },
+    ];
+
+    expect(component.expenseCategories).toEqual([
+      { category_id: 3, category_name: 'Food', category_type: 'Expense' },
+    ]);
+  });
+
   it('loads the budget endpoint array and calculates spending', async () => {
     const budgets = [
       {

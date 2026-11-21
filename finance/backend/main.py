@@ -32,6 +32,12 @@ class SignupRequest(BaseModel):
     password: str = Field(min_length=6, max_length=255)
 
 
+class UserCredentialsUpdate(BaseModel):
+    current_password: str = Field(min_length=1, max_length=255)
+    username: str | None = Field(default=None, min_length=1, max_length=100)
+    password: str | None = Field(default=None, min_length=6, max_length=255)
+
+
 class AccountUpdate(BaseModel):
     account_name: str = Field(min_length=1, max_length=100)
     account_type_ids: list[int] = Field(min_length=1)
@@ -68,7 +74,7 @@ class Expense(BaseModel):
     transaction_date: date
     notes: str | None = Field(default=None, max_length=500)
 
-
+##hashing -alhyohan
 PASSWORD_HASH_ITERATIONS = 600_000
 PASSWORD_HASH_PREFIX = "$pbkdf2_sha256$"
 
@@ -128,7 +134,7 @@ def getUser():
         cursor.close()
         conn.close()
 
-
+##for accounts
 @app.get("/accounts/{user_id}")
 def getAccounts(user_id: int):
     conn = get_connected()
@@ -418,7 +424,7 @@ def updateAccount(user_id: int, account_id: int, account: AccountUpdate):
         cursor.close()
         conn.close()
 
-
+## categories
 @app.get("/categories/{user_id}")
 def getCategories(user_id: int):
     conn = get_connected()
@@ -438,7 +444,7 @@ def getCategories(user_id: int):
         cursor.close()
         conn.close()
 
-
+##budgets
 @app.post("/budgets", status_code=status.HTTP_201_CREATED)
 def createBudget(budget: BudgetCreate):
     budget_name = budget.budget_name.strip()
@@ -609,7 +615,7 @@ def deleteBudget(user_id: int, budget_id: int):
         cursor.close()
         conn.close()
 
-
+##signup
 @app.post("/signup", status_code=status.HTTP_201_CREATED)
 def createAccount(signup: SignupRequest):
     full_name = signup.full_name.strip()
@@ -673,7 +679,7 @@ def createAccount(signup: SignupRequest):
         cursor.close()
         conn.close()
 
-
+##login check
 @app.post("/checkCredentials")
 def checkAccount(credentials: LoginRequest):
     conn = get_connected()
@@ -726,7 +732,7 @@ def checkAccount(credentials: LoginRequest):
     finally:
         cursor.close()
         conn.close()
-
+##all resources from logged user
 @app.get("/resources/{user_id}")
 def getResources(user_id: int):
 
@@ -962,6 +968,8 @@ def getResources(user_id: int):
 
         if 'conn' in locals():
             conn.close()
+
+##transaction filters from ivan and alhyohan
 @app.get("/transactionFilter/{user_id}")
 def transactionFilter(user_id: int,):
     conn = get_connected()
@@ -1143,6 +1151,7 @@ def transactionFilter(user_id: int,isorder: bool,order: str):
                 cursor.close()
                 conn.close()
     else: return "Invalid API"
+##budget 
 @app.get("/budget/{user_id}")
 def budget(user_id: int,):
     conn = get_connected()
@@ -1161,6 +1170,8 @@ def budget(user_id: int,):
     finally:
           cursor.close()
           conn.close()
+
+##ignoring the devtool error
 @app.get("/.well-known/appspecific/com.chrome.devtools.json")
 async def chrome_devtools():
     return Response(status_code=204)
@@ -1504,6 +1515,70 @@ def deleteExpense(user_id: int, transaction_id: int):
                 detail="Expense entry not found.",
             )
         conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        cursor.close()
+        conn.close()
+        
+##update user and pass
+@app.put("/change/{user_id}")
+def updateUserPass(user_id: int, update: UserCredentialsUpdate):
+    username = update.username.strip() if update.username is not None else None
+
+    conn = get_connected()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute(
+            """
+            SELECT user_id, full_name, email, password_hash, profile_image, currency
+            FROM users
+            WHERE user_id = %s
+            LIMIT 1
+            """,
+            (user_id,),
+        )
+        user = cursor.fetchone()
+
+        password_is_valid, needs_rehash = verify_password(
+            update.current_password, user["password_hash"]
+        )
+        if not password_is_valid:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Current password is incorrect.",
+            )
+
+        full_name = username or user["full_name"]
+        password_hash = (
+            hash_password(update.password)
+            if update.password is not None
+            else hash_password(update.current_password)
+            if needs_rehash
+            else user["password_hash"]
+        )
+        cursor.execute(
+            """
+            UPDATE users
+            SET full_name = %s, password_hash = %s
+            WHERE user_id = %s
+            """,
+            (full_name, password_hash, user_id),
+        )
+        conn.commit()
+
+        return {
+            "message": "Account updated successfully.",
+            "user": {
+                "user_id": user["user_id"],
+                "username": full_name,
+                "full_name": full_name,
+                "email": user["email"],
+                "profile_image": user["profile_image"],
+                "currency": user["currency"],
+            },
+        }
     except Exception:
         conn.rollback()
         raise

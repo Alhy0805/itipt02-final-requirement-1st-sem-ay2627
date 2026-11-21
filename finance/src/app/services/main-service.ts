@@ -37,6 +37,7 @@ export interface BudgetInput {
 export interface BudgetCategory {
   category_id: number;
   category_name: string;
+  category_type?: string;
 }
 
 @Injectable({ providedIn: 'root' })

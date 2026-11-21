@@ -174,6 +174,10 @@ export class BudgetsPage implements OnInit, OnDestroy {
     return this.activeBudgets.reduce((total, budget) => total + Number(budget.budget_amount || 0), 0);
   }
 
+  get expenseCategories(): BudgetCategory[] {
+    return this.categories.filter((category) => category.category_type?.toLowerCase() === 'expense');
+  }
+
   get currentPeriod(): string {
     return new Date().toLocaleString('en-US', { month: 'short', year: 'numeric' });
   }
