@@ -61,7 +61,13 @@
             <div class="report-icon"><ion-icon name="pie-chart-outline" aria-hidden="true"></ion-icon></div>
             <div class="report-details">
               <p>Remaining Budget</p>
-              <h2>₱8,450.00</h2>
+              @if (remainingBudgetError) {
+              <h2>{{ remainingBudgetError }}</h2>
+              } @else if (remainingBudget === null) {
+              <h2>Loading...</h2>
+              } @else {
+              <h2>{{ remainingBudget | currency:'PHP' }}</h2>
+              }
             </div>
           </ion-card-content>
         </ion-card>
