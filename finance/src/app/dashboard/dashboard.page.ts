@@ -78,6 +78,8 @@ export class DashboardPage {
   expense: number | null = null;
   expenseError = '';
   expenses: number | null = null;
+  remainingBudget: number | null = null;
+  remainingBudgetError = '';
   recentTransactions: DashboardTransaction[] = [];
   monthlyBudgets: DashboardBudget[] = [];
   recentTransactionsError = '';
@@ -110,6 +112,8 @@ export class DashboardPage {
     this.expense = null;
     this.expenses = null;
     this.expenseError = '';
+    this.remainingBudget = null;
+    this.remainingBudgetError = '';
     this.recentTransactions = [];
     this.monthlyBudgets = [];
     this.recentTransactionsError = '';
@@ -148,13 +152,12 @@ export class DashboardPage {
         .slice(0, 3);
 
       const { start, end } = this.getCurrentMonthBounds();
-      this.monthlyBudgets = budgets
+      const currentMonthBudgets = budgets
         .filter((budget) =>
           Boolean(budget.start_date && budget.end_date) &&
           budget.start_date.slice(0, 10) <= end &&
           budget.end_date.slice(0, 10) >= start,
         )
-        .slice(0, 3)
         .map((budget) => ({
           budget_id: budget.budget_id ?? 0,
           category_id: budget.category_id,
@@ -163,10 +166,16 @@ export class DashboardPage {
           start_date: budget.start_date,
           end_date: budget.end_date,
         }));
+      this.monthlyBudgets = currentMonthBudgets.slice(0, 3);
+      this.remainingBudget = currentMonthBudgets.reduce(
+        (total, budget) => total + Number(budget.budget_amount) - this.getBudgetSpent(budget),
+        0,
+      );
     } catch (error) {
       this.balanceError = 'Could not load balance.';
       this.incomeError = 'Could not load income.';
       this.expenseError = 'Could not load expenses.';
+      this.remainingBudgetError = 'Could not load remaining budget.';
       this.recentTransactionsError = 'Could not load recent transactions.';
       this.monthlyBudgetError = 'Could not load monthly budgets.';
       console.error('Failed to load dashboard data:', error);
