@@ -90,12 +90,23 @@
   margin: 20px;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .expense-card ion-card-content,
-.income-card ion-card-content{
+.income-card ion-card-content {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.income-card ion-card-header {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 .income-card ion-list ion-item{
   gap: 10px;
