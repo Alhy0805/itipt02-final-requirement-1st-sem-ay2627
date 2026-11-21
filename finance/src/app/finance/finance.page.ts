@@ -18,15 +18,10 @@ import {
   barChartOutline,
   homeOutline,
   logOutOutline,
-  notificationsOutline,
   pieChartOutline,
-  pricetagsOutline,
-  repeatOutline,
   settingsOutline,
   swapHorizontalOutline,
   trophyOutline,
-  trendingDownOutline,
-  trendingUpOutline,
   walletOutline,
 } from 'ionicons/icons';
 
@@ -58,15 +53,10 @@ export class FinancePage {
     addIcons({
       homeOutline,
       swapHorizontalOutline,
-      trendingUpOutline,
-      trendingDownOutline,
       walletOutline,
-      pricetagsOutline,
       pieChartOutline,
       trophyOutline,
-      repeatOutline,
       barChartOutline,
-      notificationsOutline,
       settingsOutline,
       logOutOutline,
     });

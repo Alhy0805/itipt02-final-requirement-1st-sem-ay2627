@@ -28,21 +28,9 @@ export const routes: Routes = [
           import('./transaction-management/transaction-management.page').then((m) => m.TransactionManagementPage),
       },
       {
-        path: 'income',
-        loadComponent: () => import('./income/income.page').then((m) => m.IncomePage),
-      },
-      {
-        path: 'expenses',
-        loadComponent: () => import('./expenses/expenses.page').then((m) => m.ExpensesPage),
-      },
-      {
         path: 'accounts-and-wallets',
         loadComponent: () =>
           import('./accounts-and-wallets/accounts-and-wallets.page').then((m) => m.AccountsAndWalletsPage),
-      },
-      {
-        path: 'categories',
-        loadComponent: () => import('./categories/categories.page').then((m) => m.CategoriesPage),
       },
       {
         path: 'reports-and-analytics',
@@ -56,15 +44,6 @@ export const routes: Routes = [
       {
         path: 'saving-goals',
         loadComponent: () => import('./saving-goals/saving-goals.page').then((m) => m.SavingGoalsPage),
-      },
-      {
-        path: 'recurring-transactions',
-        loadComponent: () =>
-          import('./recurring-transactions/recurring-transactions.page').then((m) => m.RecurringTransactionsPage),
-      },
-      {
-        path: 'notification',
-        loadComponent: () => import('./notification/notification.page').then((m) => m.NotificationPage),
       },
       {
         path: 'settings',
