@@ -17,7 +17,6 @@ import {
 import { RouterLink } from '@angular/router';
 import { addIcons } from 'ionicons';
 import { pieChartOutline, trendingDownOutline, trendingUpOutline, walletOutline } from 'ionicons/icons';
-import { finalize } from 'rxjs';
 import { MainService } from '../services/main-service';
 
 interface DashboardAccount {
@@ -78,6 +77,7 @@ export class DashboardPage {
   incomeError = '';
   expense: number | null = null;
   expenseError = '';
+  expenses: number | null = null;
   recentTransactions: DashboardTransaction[] = [];
   monthlyBudgets: DashboardBudget[] = [];
   recentTransactionsError = '';
@@ -98,7 +98,8 @@ export class DashboardPage {
     return new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' });
   }
 
-  ionViewWillEnter(): void {
+  async ionViewWillEnter(): Promise<void> {
+    this.isDashboardDataLoading = true;
     const user = this.mainService.getUserData();
     const userId = Number(user?.user_id);
     this.userName = user?.full_name ?? '';
@@ -107,68 +108,72 @@ export class DashboardPage {
     this.income = null;
     this.incomeError = '';
     this.expense = null;
+    this.expenses = null;
     this.expenseError = '';
     this.recentTransactions = [];
     this.monthlyBudgets = [];
     this.recentTransactionsError = '';
     this.monthlyBudgetError = '';
-    this.isDashboardDataLoading = true;
 
+    try {
+      const [income, expenses, balance, transactions, budgets] = await Promise.all([
+        this.mainService.getTotalIncome(),
+        this.mainService.getTotalExpense(),
+        this.mainService.getTotalBalance(),
+        this.mainService.getDashboardTransactions(userId),
+        this.mainService.getBudgets(),
+      ]);
 
+      this.income = income;
+      this.expense = expenses;
+      this.expenses = expenses;
+      this.balance = balance;
+      const dashboardTransactions = transactions
+        .filter((transaction) =>
+          transaction.transaction_type === 'Income' || transaction.transaction_type === 'Expense',
+        )
+        .map((transaction) => ({
+          transaction_id: transaction.transaction_id,
+          category_id: transaction.category_id,
+          transaction_type: transaction.transaction_type as 'Income' | 'Expense',
+          amount: transaction.amount,
+          description: transaction.description,
+          transaction_date: transaction.transaction_date,
+        }));
+      this.transactions = dashboardTransactions;
+      this.recentTransactions = [...dashboardTransactions]
+        .sort((first, second) =>
+          String(second.transaction_date ?? '').localeCompare(String(first.transaction_date ?? '')),
+        )
+        .slice(0, 3);
 
-    this.mainService
-      .getResources(userId)
-      .pipe(
-        finalize(() => {
-          this.isDashboardDataLoading = false;
-          this.changeDetector.markForCheck();
-        }),
-      )
-      .subscribe({
-        next: (resources: DashboardResources) => {
-          this.transactions = resources.transactions ?? [];
-          const { start, end } = this.getCurrentMonthBounds();
-
-          this.balance = (resources.accounts ?? []).reduce(
-            (total, account) => total + Number(account.balance),
-            0,
-          );
-          this.income = this.sumTransactions('Income');
-          this.expense = this.sumTransactions('Expense');
-          this.recentTransactions = [...this.transactions]
-            .sort((first, second) => second.transaction_date.localeCompare(first.transaction_date))
-            .slice(0, 3);
-          this.monthlyBudgets = (resources.budgets ?? [])
-            .filter(
-              (budget) => budget.start_date.slice(0, 10) <= end && budget.end_date.slice(0, 10) >= start,
-            )
-            .slice(0, 3);
-        },
-        error: (error) => {
-          this.balanceError = 'Could not load balance.';
-          this.incomeError = 'Could not load income.';
-          this.expenseError = 'Could not load expenses.';
-          this.recentTransactionsError = 'Could not load recent transactions.';
-          this.monthlyBudgetError = 'Could not load monthly budgets.';
-          console.error('Failed to load dashboard data:', error);
-        },
-      });
-  async ionViewWillEnter() {
-    const userId = this.mainService.getUserId();
-    const [income, expenses, balance, transactions] = await Promise.all([
-      this.mainService.getTotalIncome(),
-      this.mainService.getTotalExpense(),
-      this.mainService.getTotalBalance(),
-      this.mainService.filterTransactionData(userId, 'all', 'newest'),
-    ]);
-
-    this.income = income;
-    this.expenses = expenses;
-    this.balance = balance;
-    this.recentTransactions = transactions.slice(0, 3);
-
-    await this.loadMonthlyBudgets(userId, transactions);
-    this.changeDetector.detectChanges();
+      const { start, end } = this.getCurrentMonthBounds();
+      this.monthlyBudgets = budgets
+        .filter((budget) =>
+          Boolean(budget.start_date && budget.end_date) &&
+          budget.start_date.slice(0, 10) <= end &&
+          budget.end_date.slice(0, 10) >= start,
+        )
+        .slice(0, 3)
+        .map((budget) => ({
+          budget_id: budget.budget_id ?? 0,
+          category_id: budget.category_id,
+          budget_name: budget.budget_name,
+          budget_amount: budget.budget_amount,
+          start_date: budget.start_date,
+          end_date: budget.end_date,
+        }));
+    } catch (error) {
+      this.balanceError = 'Could not load balance.';
+      this.incomeError = 'Could not load income.';
+      this.expenseError = 'Could not load expenses.';
+      this.recentTransactionsError = 'Could not load recent transactions.';
+      this.monthlyBudgetError = 'Could not load monthly budgets.';
+      console.error('Failed to load dashboard data:', error);
+    } finally {
+      this.isDashboardDataLoading = false;
+      this.changeDetector.detectChanges();
+    }
   }
 
   getBudgetSpent(budget: DashboardBudget): number {
