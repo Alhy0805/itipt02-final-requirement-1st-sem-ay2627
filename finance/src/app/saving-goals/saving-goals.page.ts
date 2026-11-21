@@ -146,7 +146,7 @@ export class SavingGoalsPage implements OnInit {
   }
 
   deleteGoal(goal: SavingGoal): void {
-    const confirmed = window.confirm(`Delete "${goal.goal_name}"? This cannot be undone.`);
+    const confirmed = window.confirm(`Are you sure you want to delete "${goal.goal_name}"?`);
     if (confirmed === false) {
       return;
     }
