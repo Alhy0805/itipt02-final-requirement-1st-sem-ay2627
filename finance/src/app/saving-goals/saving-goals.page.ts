@@ -69,18 +69,9 @@ export class SavingGoalsPage implements OnInit {
   };
 
   ngOnInit(): void {
-    const savedResources = localStorage.getItem('finance-resources');
-    if (savedResources !== null) {
-      const resources = JSON.parse(savedResources);
-
-      if (resources.savings_goals) {
-        this.goals = resources.savings_goals;
-      }
-
-      if (resources.goal_contributions) {
-        this.contributions = resources.goal_contributions;
-      }
-    }
+    const resources = JSON.parse(localStorage.getItem('finance-resources') || '{}');
+    this.goals = resources.savings_goals || [];
+    this.contributions = resources.goal_contributions || [];
   }
 
   getSavedAmount(goal: SavingGoal): number {
@@ -104,25 +95,18 @@ export class SavingGoalsPage implements OnInit {
     }
 
     if (this.editingGoalId !== null) {
-      const confirmed = window.confirm('Save changes to this saving goal?');
-      if (confirmed === false) {
+      if (!window.confirm('Save changes to this saving goal?')) {
         return;
       }
 
-      let goalWasFound = false;
-      for (const savedGoal of this.goals) {
-        if (savedGoal.goal_id === this.editingGoalId) {
-          savedGoal.goal_name = goalName;
-          savedGoal.target_amount = targetAmount;
-          savedGoal.target_date = this.newGoal.target_date;
-          goalWasFound = true;
-          break;
-        }
-      }
-
-      if (goalWasFound === false) {
+      const savedGoal = this.goals.find((goal) => goal.goal_id === this.editingGoalId);
+      if (!savedGoal) {
         return;
       }
+
+      savedGoal.goal_name = goalName;
+      savedGoal.target_amount = targetAmount;
+      savedGoal.target_date = this.newGoal.target_date;
     } else {
       const goal: SavingGoal = {
         goal_id: Date.now(),
@@ -146,22 +130,12 @@ export class SavingGoalsPage implements OnInit {
   }
 
   deleteGoal(goal: SavingGoal): void {
-    const confirmed = window.confirm(`Are you sure you want to delete "${goal.goal_name}"?`);
-    if (confirmed === false) {
+    if (!window.confirm(`Are you sure you want to delete "${goal.goal_name}"?`)) {
       return;
     }
 
-    for (let index = this.goals.length - 1; index >= 0; index--) {
-      if (this.goals[index].goal_id === goal.goal_id) {
-        this.goals.splice(index, 1);
-      }
-    }
-
-    for (let index = this.contributions.length - 1; index >= 0; index--) {
-      if (this.contributions[index].goal_id === goal.goal_id) {
-        this.contributions.splice(index, 1);
-      }
-    }
+    this.goals = this.goals.filter((savedGoal) => savedGoal.goal_id !== goal.goal_id);
+    this.contributions = this.contributions.filter((contribution) => contribution.goal_id !== goal.goal_id);
 
     if (this.editingGoalId === goal.goal_id) {
       this.resetForm();
