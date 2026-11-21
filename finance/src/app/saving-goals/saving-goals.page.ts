@@ -14,7 +14,7 @@ import {
   IonLabel,
   IonList,
   IonTitle,
-  IonToolbar,
+  IonToolbar
 } from '@ionic/angular';
 
 interface SavingGoal {
@@ -54,8 +54,8 @@ interface GoalForm {
     IonLabel,
     IonList,
     IonTitle,
-    IonToolbar,
-  ],
+    IonToolbar
+  ]
 })
 export class SavingGoalsPage implements OnInit {
   goals: SavingGoal[] = [];
