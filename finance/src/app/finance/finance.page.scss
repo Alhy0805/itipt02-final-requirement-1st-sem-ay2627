@@ -80,24 +80,6 @@ ion-menu ion-header ion-toolbar {
   margin: 0;
 }
 
-.header-right {
-  display: flex;
-  align-items: center;
-}
-
-.logout-button {
-  --color: var(--text-primary);
-  --border-radius: 8px;
-  height: 40px;
-  margin: 0;
-  font-weight: 650;
-}
-
-.logout-button ion-icon {
-  margin-right: 6px;
-  font-size: 20px;
-}
-
 .content {
   position: relative;
   flex: 1 1 auto;

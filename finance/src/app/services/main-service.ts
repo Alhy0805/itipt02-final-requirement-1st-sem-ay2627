@@ -44,12 +44,40 @@ export class MainService {
   private readonly apiUrl = 'http://127.0.0.1:8000';
   private readonly http = inject(HttpClient);
 
-  getResources(userId: number): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/resources/${userId}`);
+  checkConnection(): Observable<unknown> {
+    return this.http.get<unknown>(`${this.apiUrl}/`);
+  }
+
+  getUsers(): Observable<unknown[]> {
+    return this.http.get<unknown[]>(`${this.apiUrl}/users`);
+  }
+
+  signup(userData: unknown): Observable<unknown> {
+    return this.http.post<unknown>(`${this.apiUrl}/signup`, userData);
+  }
+
+  checkCredentials(credentials: unknown): Observable<unknown> {
+    return this.http.post<unknown>(`${this.apiUrl}/checkCredentials`, credentials);
+  }
+
+  getResources(userId: number): Observable<unknown> {
+    return this.http.get<unknown>(`${this.apiUrl}/resources/${userId}`);
   }
 
   getAccounts(userId: number): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/accounts/${userId}`);
+  }
+
+  getAccountTypes(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/account-types`);
+  }
+
+  createAccount(userId: number, accountData: unknown): Observable<unknown> {
+    return this.http.post<unknown>(`${this.apiUrl}/accounts/${userId}`, accountData);
+  }
+
+  updateAccount(userId: number, accountId: number, accountData: unknown): Observable<unknown> {
+    return this.http.put<unknown>(`${this.apiUrl}/accounts/${userId}/${accountId}`, accountData);
   }
 
   getCategories(userId: number): Observable<any[]> {
@@ -63,6 +91,12 @@ export class MainService {
   filterTransactions(userId: number, transactionType: string): Observable<Transaction[]> {
     return this.http.get<Transaction[]>(
       `${this.apiUrl}/transactionFilter/${userId}/${encodeURIComponent(transactionType)}`,
+    );
+  }
+
+  sortTransactions(userId: number, isOrder: string | boolean, order: string): Observable<Transaction[]> {
+    return this.http.get<Transaction[]>(
+      `${this.apiUrl}/transactionFilter/${userId}/${isOrder}/${encodeURIComponent(order)}`,
     );
   }
 
@@ -116,7 +150,10 @@ export class MainService {
   }
 
   updateIncome(userId: number, transactionId: number, transactionData: unknown): Observable<unknown> {
-    return this.http.put<unknown>(`${this.apiUrl}/income/${userId}/${transactionId}`, transactionData);
+    return this.http.put<unknown>(
+      `${this.apiUrl}/income/${userId}/${transactionId}`,
+      transactionData,
+    );
   }
 
   deleteIncome(userId: number, transactionId: number): Observable<unknown> {
@@ -128,7 +165,10 @@ export class MainService {
   }
 
   updateExpense(userId: number, transactionId: number, transactionData: unknown): Observable<unknown> {
-    return this.http.put<unknown>(`${this.apiUrl}/expense/${userId}/${transactionId}`, transactionData);
+    return this.http.put<unknown>(
+      `${this.apiUrl}/expense/${userId}/${transactionId}`,
+      transactionData,
+    );
   }
 
   deleteExpense(userId: number, transactionId: number): Observable<unknown> {
@@ -226,10 +266,7 @@ export class MainService {
     this.setLocalStorageData({ ...resources, budgets });
   }
 
-  private async fetchTransactions(
-    userId: number,
-    type: 'all' | 'Income' | 'Expense',
-  ): Promise<Transaction[]> {
+  private async fetchTransactions(userId: number, type: 'all' | 'Income' | 'Expense'): Promise<Transaction[]> {
     const suffix = type === 'all' ? '' : `/${encodeURIComponent(type)}`;
     const response = await fetch(`${this.apiUrl}/transactionFilter/${userId}${suffix}`);
     await this.ensureSuccess(response, 'Could not load transactions');

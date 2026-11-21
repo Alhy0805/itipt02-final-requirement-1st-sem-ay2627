@@ -1,5 +1,5 @@
-import { Component, inject } from '@angular/core';
-import { Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { Component } from '@angular/core';
+import { RouterLink, RouterLinkActive } from '@angular/router';
 import {
   IonButton,
   IonContent,
@@ -17,7 +17,6 @@ import { addIcons } from 'ionicons';
 import {
   barChartOutline,
   homeOutline,
-  logOutOutline,
   notificationsOutline,
   pieChartOutline,
   pricetagsOutline,
@@ -52,8 +51,6 @@ import {
   ],
 })
 export class FinancePage {
-  private readonly router = inject(Router);
-
   constructor() {
     addIcons({
       homeOutline,
@@ -68,13 +65,6 @@ export class FinancePage {
       barChartOutline,
       notificationsOutline,
       settingsOutline,
-      logOutOutline,
     });
-  }
-
-  logout(): void {
-    localStorage.removeItem('finance-user');
-    localStorage.removeItem('finance-resources');
-    void this.router.navigateByUrl('/login', { replaceUrl: true });
   }
 }

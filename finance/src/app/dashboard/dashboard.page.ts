@@ -1,11 +1,11 @@
 import { ChangeDetectorRef, Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
-  IonButton,
   IonCard,
   IonCardContent,
   IonCardHeader,
   IonCardTitle,
+  IonButton,
   IonContent,
   IonIcon,
   IonItem,
@@ -18,6 +18,10 @@ import { RouterLink } from '@angular/router';
 import { addIcons } from 'ionicons';
 import { pieChartOutline, trendingDownOutline, trendingUpOutline, walletOutline } from 'ionicons/icons';
 import { MainService } from '../services/main-service';
+
+interface DashboardAccount {
+  balance: number | string;
+}
 
 interface DashboardTransaction {
   transaction_id: number;
@@ -35,6 +39,12 @@ interface DashboardBudget {
   budget_amount: number | string;
   start_date: string;
   end_date: string;
+}
+
+interface DashboardResources {
+  accounts?: DashboardAccount[];
+  transactions?: DashboardTransaction[];
+  budgets?: DashboardBudget[];
 }
 
 @Component({
@@ -66,8 +76,8 @@ export class DashboardPage {
   income: number | null = null;
   incomeError = '';
   expense: number | null = null;
-  expenses: number | null = null;
   expenseError = '';
+  expenses: number | null = null;
   recentTransactions: DashboardTransaction[] = [];
   monthlyBudgets: DashboardBudget[] = [];
   recentTransactionsError = '';
@@ -75,10 +85,7 @@ export class DashboardPage {
   isDashboardDataLoading = true;
   private transactions: DashboardTransaction[] = [];
 
-  constructor(
-    private readonly changeDetector: ChangeDetectorRef,
-    private readonly mainService: MainService,
-  ) {
+  constructor(private readonly changeDetector: ChangeDetectorRef, private mainService: MainService) {
     addIcons({
       pieChartOutline,
       trendingDownOutline,
@@ -94,36 +101,68 @@ export class DashboardPage {
   async ionViewWillEnter(): Promise<void> {
     this.isDashboardDataLoading = true;
     const user = this.mainService.getUserData();
-    const userId = this.mainService.getUserId();
+    const userId = Number(user?.user_id);
     this.userName = user?.full_name ?? '';
-    this.resetDashboard();
+    this.balance = null;
+    this.balanceError = '';
+    this.income = null;
+    this.incomeError = '';
+    this.expense = null;
+    this.expenses = null;
+    this.expenseError = '';
+    this.recentTransactions = [];
+    this.monthlyBudgets = [];
+    this.recentTransactionsError = '';
+    this.monthlyBudgetError = '';
 
     try {
-      const [income, expense, balance, transactions] = await Promise.all([
-        this.mainService.getTotalIncome(userId),
-        this.mainService.getTotalExpense(userId),
-        this.mainService.getTotalBalance(userId),
+      const [income, expenses, balance, transactions, budgets] = await Promise.all([
+        this.mainService.getTotalIncome(),
+        this.mainService.getTotalExpense(),
+        this.mainService.getTotalBalance(),
         this.mainService.getDashboardTransactions(userId),
+        this.mainService.getBudgets(),
       ]);
 
       this.income = income;
-      this.expense = expense;
-      this.expenses = expense;
+      this.expense = expenses;
+      this.expenses = expenses;
       this.balance = balance;
-      this.transactions = transactions;
-      this.recentTransactions = [...transactions]
-        .sort((first, second) => second.transaction_date.localeCompare(first.transaction_date))
+      const dashboardTransactions = transactions
+        .filter((transaction) =>
+          transaction.transaction_type === 'Income' || transaction.transaction_type === 'Expense',
+        )
+        .map((transaction) => ({
+          transaction_id: transaction.transaction_id,
+          category_id: transaction.category_id,
+          transaction_type: transaction.transaction_type as 'Income' | 'Expense',
+          amount: transaction.amount,
+          description: transaction.description,
+          transaction_date: transaction.transaction_date,
+        }));
+      this.transactions = dashboardTransactions;
+      this.recentTransactions = [...dashboardTransactions]
+        .sort((first, second) =>
+          String(second.transaction_date ?? '').localeCompare(String(first.transaction_date ?? '')),
+        )
         .slice(0, 3);
 
-      const budgets = await this.mainService.getBudgets();
       const { start, end } = this.getCurrentMonthBounds();
-      this.monthlyBudgets = budgets.filter(
-        (budget) =>
-          typeof budget.start_date === 'string' &&
-          typeof budget.end_date === 'string' &&
+      this.monthlyBudgets = budgets
+        .filter((budget) =>
+          Boolean(budget.start_date && budget.end_date) &&
           budget.start_date.slice(0, 10) <= end &&
           budget.end_date.slice(0, 10) >= start,
-      ) as DashboardBudget[];
+        )
+        .slice(0, 3)
+        .map((budget) => ({
+          budget_id: budget.budget_id ?? 0,
+          category_id: budget.category_id,
+          budget_name: budget.budget_name,
+          budget_amount: budget.budget_amount,
+          start_date: budget.start_date,
+          end_date: budget.end_date,
+        }));
     } catch (error) {
       this.balanceError = 'Could not load balance.';
       this.incomeError = 'Could not load income.';
@@ -152,23 +191,15 @@ export class DashboardPage {
       .reduce((total, transaction) => total + Number(transaction.amount), 0);
   }
 
+  private sumTransactions(type: DashboardTransaction['transaction_type']): number {
+    return this.transactions
+      .filter((transaction) => transaction.transaction_type === type)
+      .reduce((total, transaction) => total + Number(transaction.amount), 0);
+  }
+
   getBudgetProgress(budget: DashboardBudget): number {
     const budgetAmount = Number(budget.budget_amount);
     return budgetAmount > 0 ? Math.min(this.getBudgetSpent(budget) / budgetAmount, 1) : 0;
-  }
-
-  private resetDashboard(): void {
-    this.balance = null;
-    this.balanceError = '';
-    this.income = null;
-    this.incomeError = '';
-    this.expense = null;
-    this.expenses = null;
-    this.expenseError = '';
-    this.recentTransactions = [];
-    this.monthlyBudgets = [];
-    this.recentTransactionsError = '';
-    this.monthlyBudgetError = '';
   }
 
   private getCurrentMonthBounds(): { start: string; end: string } {

@@ -173,25 +173,3 @@
   background: var(--primary);
 }
 .transactions-content .transaction-list::-webkit-scrollbar-thumb:hover { background: var(--primary-hover); }
-
-.transactions-content .income-card ion-card-content {
-  scrollbar-color: var(--primary) var(--primary-light);
-  scrollbar-width: thin;
-}
-
-.transactions-content .income-card ion-card-content::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-.transactions-content .income-card ion-card-content::-webkit-scrollbar-track {
-  border-radius: 999px;
-  background: var(--primary-light);
-}
-.transactions-content .income-card ion-card-content::-webkit-scrollbar-thumb {
-  border: 2px solid var(--primary-light);
-  border-radius: 999px;
-  background: var(--primary);
-}
-.transactions-content .income-card ion-card-content::-webkit-scrollbar-thumb:hover {
-  background: var(--primary-hover);
-}
