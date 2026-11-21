@@ -9,10 +9,16 @@ import {
   IonCardHeader,
   IonCardTitle,
   IonContent,
+  IonDatetime,
+  IonDatetimeButton,
   IonIcon,
   IonInput,
+  IonModal,
   IonSearchbar,
+  ToastController,
 } from '@ionic/angular';
+import { MainService } from '../services/main-service';
+import type { Budget, BudgetCategory, BudgetInput } from '../services/main-service';
 import { ArcElement, Chart, Legend, PieController, Tooltip } from 'chart.js';
 import { addIcons } from 'ionicons';
 import {
@@ -23,21 +29,6 @@ import {
   trendingUpOutline,
   walletOutline,
 } from 'ionicons/icons';
-
-interface Budget {
-  budget_id?: number;
-  category_id: number;
-  budget_name: string;
-  budget_amount: number | string;
-  start_date: string;
-  end_date: string;
-  created_at: string;
-}
-
-interface BudgetCategory {
-  category_id: number;
-  category_name: string;
-}
 
 interface BudgetTransaction {
   category_id: number | string;
@@ -61,13 +52,18 @@ type BudgetPeriodFilter = 'all' | 'active' | 'upcoming' | 'past';
     IonCardHeader,
     IonCardTitle,
     IonContent,
+    IonDatetime,
+    IonDatetimeButton,
     IonIcon,
     IonInput,
+    IonModal,
     IonSearchbar,
   ],
 })
 export class BudgetsPage implements OnInit, OnDestroy {
   private readonly changeDetector = inject(ChangeDetectorRef);
+  private readonly toastController = inject(ToastController);
+  private readonly mainService = inject(MainService);
   private budgetChart?: Chart<'pie', number[], string>;
   private readonly chartColors = [
     '#5653d8',
@@ -95,8 +91,6 @@ export class BudgetsPage implements OnInit, OnDestroy {
   errorMessage = '';
   newBudget: Budget = this.emptyBudget();
   private hasLoadedBudgets = false;
-
-  readonly budgetAPI = 'http://127.0.0.1:8000';
 
   constructor() {
     addIcons({
@@ -248,38 +242,28 @@ export class BudgetsPage implements OnInit, OnDestroy {
     return amount > 0 ? Math.min(this.getBudgetSpent(budget) / amount, 1) : 0;
   }
 
+  setStartDate(event: CustomEvent): void {
+    this.newBudget.start_date = this.getDateValue(event);
+  }
+
+  setEndDate(event: CustomEvent): void {
+    this.newBudget.end_date = this.getDateValue(event);
+  }
+
   async loadBudgets(): Promise<void> {
     this.isLoading = true;
     this.errorMessage = '';
 
     try {
-      const savedUser = localStorage.getItem('finance-user');
-      if (!savedUser) {
-        throw new Error('Please sign in again to load your budgets.');
-      }
-
-      const user = JSON.parse(savedUser) as { user_id?: number };
-      this.userId = Number(user.user_id);
-      if (!Number.isInteger(this.userId) || this.userId <= 0) {
-        throw new Error('Your saved user session is invalid. Please sign in again.');
-      }
-
-      const savedResources = localStorage.getItem('finance-resources');
-      if (savedResources) {
-        const resources = JSON.parse(savedResources) as {
-          categories?: BudgetCategory[];
-          transactions?: BudgetTransaction[];
-        };
-        this.categories = resources.categories ?? [];
-        this.transactions = resources.transactions ?? [];
-      }
-
-      const response = await fetch(`${this.budgetAPI}/budget/${this.userId}`);
-      if (!response.ok) {
-        throw new Error(await this.getResponseError(response));
-      }
-
-      this.budgets = (await response.json()) as Budget[];
+      this.userId = this.mainService.getUserId();
+      const resources = this.mainService.getLocalStorageData<{
+        categories?: BudgetCategory[];
+        transactions?: BudgetTransaction[];
+      }>();
+      this.categories = resources?.categories ?? [];
+      this.transactions = resources?.transactions ?? [];
+      this.categories = await this.mainService.getBudgetCategories();
+      this.budgets = await this.mainService.getBudgets();
       this.updateCachedBudgets();
     } catch (error) {
       console.error('Unable to load budgets:', error);
@@ -336,31 +320,22 @@ export class BudgetsPage implements OnInit, OnDestroy {
     this.isSaving = true;
     try {
       const editingId = this.editingBudgetId;
-      const response = await fetch(
-        editingId ? `${this.budgetAPI}/budgets/${this.userId}/${editingId}` : `${this.budgetAPI}/budgets`,
-        {
-          method: editingId ? 'PUT' : 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            user_id: this.userId,
-            category_id: Number(this.newBudget.category_id),
-            budget_name: budgetName,
-            budget_amount: budgetAmount,
-            start_date: this.newBudget.start_date,
-            end_date: this.newBudget.end_date,
-          }),
-        },
-      );
-      if (!response.ok) {
-        throw new Error(await this.getResponseError(response));
-      }
-
-      const savedBudget = (await response.json()) as Budget;
+      const payload: BudgetInput = {
+        category_id: Number(this.newBudget.category_id),
+        budget_name: budgetName,
+        budget_amount: budgetAmount,
+        start_date: this.newBudget.start_date,
+        end_date: this.newBudget.end_date,
+      };
+      const savedBudget = editingId
+        ? await this.mainService.updateBudget(editingId, payload)
+        : await this.mainService.createBudget(payload);
       this.budgets = editingId
         ? this.budgets.map((budget) => (budget.budget_id === editingId ? savedBudget : budget))
         : [savedBudget, ...this.budgets];
       this.resetForm();
       this.updateCachedBudgets();
+      await this.presentToast(editingId ? 'Budget updated successfully.' : 'Budget added successfully.');
     } catch (error) {
       console.error('Unable to save budget:', error);
       this.errorMessage = error instanceof Error ? error.message : 'Unable to save budget.';
@@ -379,15 +354,10 @@ export class BudgetsPage implements OnInit, OnDestroy {
     this.deletingBudgetId = budget.budget_id;
     this.errorMessage = '';
     try {
-      const response = await fetch(`${this.budgetAPI}/budgets/${this.userId}/${budget.budget_id}`, {
-        method: 'DELETE',
-      });
-      if (!response.ok) {
-        throw new Error(await this.getResponseError(response));
-      }
-
+      await this.mainService.deleteBudget(budget.budget_id);
       this.budgets = this.budgets.filter((item) => item.budget_id !== budget.budget_id);
       this.updateCachedBudgets();
+      await this.presentToast('Budget deleted successfully.');
     } catch (error) {
       console.error('Unable to delete budget:', error);
       this.errorMessage = error instanceof Error ? error.message : 'Unable to delete budget.';
@@ -411,12 +381,10 @@ export class BudgetsPage implements OnInit, OnDestroy {
   }
 
   private updateCachedBudgets(): void {
-    const savedResources = localStorage.getItem('finance-resources');
-    const resources = savedResources ? (JSON.parse(savedResources) as Record<string, unknown>) : {};
-    localStorage.setItem('finance-resources', JSON.stringify({ ...resources, budgets: this.budgets }));
+    this.mainService.updateBudgetCache(this.budgets);
   }
 
-  private getToday(): string {
+  getToday(): string {
     const parts = new Intl.DateTimeFormat('en-CA', {
       year: 'numeric',
       month: '2-digit',
@@ -427,16 +395,27 @@ export class BudgetsPage implements OnInit, OnDestroy {
     return `${values['year']}-${values['month']}-${values['day']}`;
   }
 
-  private async getResponseError(response: Response): Promise<string> {
-    const payload = (await response.json().catch(() => null)) as { detail?: unknown } | null;
-    return typeof payload?.detail === 'string' ? payload.detail : `Request failed with status ${response.status}.`;
+  private getDateValue(event: CustomEvent): string {
+    const value = event.detail?.value;
+    if (typeof value !== 'string') return '';
+    return value.split('T')[0];
+  }
+
+  private async presentToast(message: string): Promise<void> {
+    const toast = await this.toastController.create({
+      message,
+      duration: 2500,
+      position: 'bottom',
+      color: 'success',
+    });
+    await toast.present();
   }
 
   private emptyBudget(): Budget {
     return {
       category_id: 0,
       budget_name: '',
-      budget_amount: 0,
+      budget_amount: '',
       start_date: '',
       end_date: '',
       created_at: '',

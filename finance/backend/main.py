@@ -457,7 +457,7 @@ def createBudget(budget: BudgetCreate):
     cursor = conn.cursor(dictionary=True)
     try:
         cursor.execute(
-            "SELECT category_id FROM categories WHERE category_id = %s AND user_id = %s",
+            "SELECT category_id FROM categories WHERE category_id = %s AND (user_id = %s OR user_id IS NULL)",
             (budget.category_id, budget.user_id),
         )
         if cursor.fetchone() is None:
@@ -528,7 +528,7 @@ def updateBudget(user_id: int, budget_id: int, budget: BudgetCreate):
     cursor = conn.cursor(dictionary=True)
     try:
         cursor.execute(
-            "SELECT category_id FROM categories WHERE category_id = %s AND user_id = %s",
+            "SELECT category_id FROM categories WHERE category_id = %s AND (user_id = %s OR user_id IS NULL)",
             (budget.category_id, user_id),
         )
         if cursor.fetchone() is None:

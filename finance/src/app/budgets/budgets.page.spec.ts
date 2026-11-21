@@ -1,5 +1,6 @@
 import type { ComponentFixture } from '@angular/core/testing';
 import { TestBed } from '@angular/core/testing';
+import { ToastController } from '@ionic/angular';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { BudgetsPage } from './budgets.page';
@@ -31,8 +32,15 @@ vi.mock('chart.js', () => {
 describe('BudgetsPage', () => {
   let component: BudgetsPage;
   let fixture: ComponentFixture<BudgetsPage>;
+  let toastControllerMock: { create: ReturnType<typeof vi.fn> };
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    toastControllerMock = {
+      create: vi.fn().mockResolvedValue({ present: vi.fn().mockResolvedValue(undefined) }),
+    };
+    TestBed.configureTestingModule({
+      providers: [{ provide: ToastController, useValue: toastControllerMock }],
+    });
     localStorage.setItem('finance-user', JSON.stringify({ user_id: 42 }));
     localStorage.setItem(
       'finance-resources',
@@ -48,10 +56,14 @@ describe('BudgetsPage', () => {
         ],
       }),
     );
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify([]), { status: 200 })));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation(() => Promise.resolve(new Response(JSON.stringify([]), { status: 200 }))),
+    );
     fixture = TestBed.createComponent(BudgetsPage);
     component = fixture.componentInstance;
     fixture.detectChanges();
+    await vi.waitFor(() => expect(component.isLoading).toBe(false));
   });
 
   afterEach(() => {
@@ -63,6 +75,12 @@ describe('BudgetsPage', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('starts the budget amount input empty', () => {
+    component.beginCreate();
+
+    expect(component.newBudget.budget_amount).toBe('');
   });
 
   it('loads the budget endpoint array and calculates spending', async () => {
@@ -78,7 +96,9 @@ describe('BudgetsPage', () => {
       },
     ];
     const fetchMock = vi.mocked(fetch);
-    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify(budgets), { status: 200 }));
+    fetchMock
+      .mockResolvedValueOnce(new Response(JSON.stringify([{ category_id: 3, category_name: 'Food' }]), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify(budgets), { status: 200 }));
 
     await component.loadBudgets();
 
@@ -101,7 +121,9 @@ describe('BudgetsPage', () => {
         created_at: '2026-11-01T10:00:00',
       },
     ];
-    vi.mocked(fetch).mockResolvedValueOnce(new Response(JSON.stringify(budgets), { status: 200 }));
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(new Response(JSON.stringify([{ category_id: 3, category_name: 'Food' }]), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify(budgets), { status: 200 }));
 
     await component.loadBudgets();
     fixture.detectChanges();
@@ -116,12 +138,15 @@ describe('BudgetsPage', () => {
     const fetchMock = vi.mocked(fetch);
     await component.loadBudgets();
     fetchMock.mockClear();
-    fetchMock.mockResolvedValue(new Response(JSON.stringify([]), { status: 200 }));
+    fetchMock
+      .mockResolvedValueOnce(new Response(JSON.stringify([]), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify([]), { status: 200 }));
 
     component.ionViewWillEnter();
-    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
 
-    expect(fetchMock).toHaveBeenCalledWith('http://127.0.0.1:8000/budget/42');
+    expect(fetchMock).toHaveBeenNthCalledWith(1, 'http://127.0.0.1:8000/categories/42');
+    expect(fetchMock).toHaveBeenNthCalledWith(2, 'http://127.0.0.1:8000/budget/42');
   });
 
   it('creates a budget through the backend and updates the list', async () => {
@@ -151,6 +176,9 @@ describe('BudgetsPage', () => {
     );
     expect(component.budgets).toContainEqual(createdBudget);
     expect(component.showForm).toBe(false);
+    expect(toastControllerMock.create).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'Budget added successfully.', color: 'success' }),
+    );
   });
 
   it('updates and deletes a budget using its ID', async () => {
@@ -181,11 +209,17 @@ describe('BudgetsPage', () => {
       expect.objectContaining({ method: 'PUT' }),
     );
     expect(component.budgets[0].budget_amount).toBe(150);
+    expect(toastControllerMock.create).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'Budget updated successfully.', color: 'success' }),
+    );
 
     vi.spyOn(window, 'confirm').mockReturnValue(true);
     await component.deleteBudget(component.budgets[0]);
 
     expect(fetchMock).toHaveBeenNthCalledWith(2, 'http://127.0.0.1:8000/budgets/42/8', { method: 'DELETE' });
     expect(component.budgets).toEqual([]);
+    expect(toastControllerMock.create).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'Budget deleted successfully.', color: 'success' }),
+    );
   });
 });

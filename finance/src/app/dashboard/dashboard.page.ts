@@ -153,6 +153,22 @@ export class DashboardPage {
           console.error('Failed to load dashboard data:', error);
         },
       });
+  async ionViewWillEnter() {
+    const userId = this.mainService.getUserId();
+    const [income, expenses, balance, transactions] = await Promise.all([
+      this.mainService.getTotalIncome(),
+      this.mainService.getTotalExpense(),
+      this.mainService.getTotalBalance(),
+      this.mainService.filterTransactionData(userId, 'all', 'newest'),
+    ]);
+
+    this.income = income;
+    this.expenses = expenses;
+    this.balance = balance;
+    this.recentTransactions = transactions.slice(0, 3);
+
+    await this.loadMonthlyBudgets(userId, transactions);
+    this.changeDetector.detectChanges();
   }
 
   getBudgetSpent(budget: DashboardBudget): number {
