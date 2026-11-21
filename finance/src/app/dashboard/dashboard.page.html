@@ -3,8 +3,8 @@
     <div class="dashboard-left">
       <div class="dashboard-time">
         <div class="dashboard-greet">
-          <h1>Good morning, {{ userName }}!</h1>
-          <h3>Here's your financial overview for November 2026</h3>
+          <h1>Good morning! {{ userName }}</h1>
+          <h3>Here's your financial overview for {{ currentMonthLabel }}</h3>
         </div>
       </div>
       <div class="dashboard-quick-report">
@@ -13,7 +13,13 @@
             <div class="report-icon"><ion-icon name="wallet-outline" aria-hidden="true"></ion-icon></div>
             <div class="report-details">
               <p>Balance</p>
+              @if (balanceError) {
+              <h2>{{ balanceError }}</h2>
+              } @else if (balance === null) {
+              <h2>Loading...</h2>
+              } @else {
               <h2>{{ balance | currency:'PHP' }}</h2>
+              }
             </div>
           </ion-card-content>
         </ion-card>
@@ -23,7 +29,13 @@
             <div class="report-icon"><ion-icon name="trending-up-outline" aria-hidden="true"></ion-icon></div>
             <div class="report-details">
               <p>Income</p>
-              <h2>{{ income | currency: 'PHP' }}</h2>
+              @if (incomeError) {
+              <h2>{{ incomeError }}</h2>
+              } @else if (income === null) {
+              <h2>Loading...</h2>
+              } @else {
+              <h2>{{ income | currency:'PHP' }}</h2>
+              }
             </div>
           </ion-card-content>
         </ion-card>
@@ -33,7 +45,13 @@
             <div class="report-icon"><ion-icon name="trending-down-outline" aria-hidden="true"></ion-icon></div>
             <div class="report-details">
               <p>Expenses</p>
-              <h2>{{ expenses | currency: 'PHP' }}</h2>
+              @if (expenseError) {
+              <h2>{{ expenseError }}</h2>
+              } @else if (expense === null) {
+              <h2>Loading...</h2>
+              } @else {
+              <h2>{{ expense | currency:'PHP' }}</h2>
+              }
             </div>
           </ion-card-content>
         </ion-card>
@@ -58,28 +76,42 @@
             </ion-button>
           </ion-card-header>
           <ion-list>
-            @for (transaction of recentTransactions; track $index) {
+            @if (isDashboardDataLoading) {
+            <ion-item>
+              <ion-label>Loading transactions...</ion-label>
+            </ion-item>
+            } @else if (recentTransactionsError) {
+            <ion-item>
+              <ion-label>{{ recentTransactionsError }}</ion-label>
+            </ion-item>
+            } @else if (recentTransactions.length === 0) {
+            <ion-item>
+              <ion-label>No recent transactions.</ion-label>
+            </ion-item>
+            } @else {
+            @for (transaction of recentTransactions; track transaction.transaction_id) {
             <ion-item>
               <ion-label>
                 <h3>{{ transaction.description }}</h3>
                 <p>
-                  <span [class.income-amount]="transaction.transaction_type === 'Income'"
-                    [class.expense-amount]="transaction.transaction_type === 'Expense'">
+                  <span
+                    [class.income-amount]="transaction.transaction_type === 'Income'"
+                    [class.expense-amount]="transaction.transaction_type === 'Expense'"
+                  >
                     {{ transaction.transaction_type }}
                   </span>
                   · {{ transaction.transaction_date | date:'mediumDate' }}
                 </p>
               </ion-label>
-              <ion-note slot="end"
+              <ion-note
+                slot="end"
                 [class.income-amount]="transaction.transaction_type === 'Income'"
-                [class.expense-amount]="transaction.transaction_type === 'Expense'">
+                [class.expense-amount]="transaction.transaction_type === 'Expense'"
+              >
                 {{ transaction.amount | currency:'PHP' }}
               </ion-note>
             </ion-item>
-            } @empty {
-            <ion-item>
-              <ion-label>No recent transactions.</ion-label>
-            </ion-item>
+            }
             }
           </ion-list>
         </ion-card>
@@ -92,12 +124,14 @@
             </ion-button>
           </ion-card-header>
           <ion-card-content>
-            @if (monthlyBudgetError) {
+            @if (isDashboardDataLoading) {
+            <p>Loading budgets...</p>
+            } @else if (monthlyBudgetError) {
             <p>{{ monthlyBudgetError }}</p>
             } @else if (monthlyBudgets.length === 0) {
-            <p>No budgets for this month.</p>
+            <p class="empty-budget">No budgets for this month.</p>
             } @else {
-            @for (budget of monthlyBudgets; track $index) {
+            @for (budget of monthlyBudgets; track budget.budget_id) {
             <div class="monthly-budget">
               <div class="monthly-budget-heading">
                 <div>

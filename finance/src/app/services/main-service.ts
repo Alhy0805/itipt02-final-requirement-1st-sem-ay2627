@@ -1,18 +1,22 @@
-
-import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { inject, Service } from '@angular/core';
+import { map, Observable } from 'rxjs';
 
 export interface Transaction {
+    transaction_id: number;
+    account_id: number;
+    category_id: number | null;
     amount: number | string;
     transaction_type: string;
     description: string;
     transaction_date: string;
     notes: string | null;
-    category_id?: number | string;
 }
 
 export type TransactionFilter = 'all' | 'Income' | 'Expense';
 export type TransactionOrder = 'newest' | 'oldest' | 'a-z' | 'z-a' | 'highest' | 'lowest';
 
+@Service()
 export interface Budget {
     budget_id?: number;
     category_id: number;
@@ -41,24 +45,78 @@ export interface BudgetCategory {
 })
 export class MainService {
 
-    private readonly API = 'http://127.0.0.1:8000';
+    private apiUrl = 'http://127.0.0.1:8000';
+    private http = inject(HttpClient);
 
+  // GENERAL AND USER
+
+    checkConnection(): Observable<any> {
+        return this.http.get(`${this.apiUrl}/`);
     getLocalStorageData<T = unknown>(): T | null {
         const data = localStorage.getItem('finance-resources');
         return data ? JSON.parse(data) as T : null;
     }
 
-    getUserData(): any {
-        const data = localStorage.getItem('finance-user');
-        return data ? JSON.parse(data) : null;
+    getUsers(): Observable<any[]> {
+        return this.http.get<any[]>(`${this.apiUrl}/users`);
     }
 
-    getUserId(): number {
-        const userId = Number(this.getUserData()?.user_id);
-        if (!Number.isInteger(userId) || userId <= 0) {
-            throw new Error('No valid logged-in user ID was found.');
-        }
-        return userId;
+    signup(userData: any): Observable<any> {
+        return this.http.post(`${this.apiUrl}/signup`, userData);
+    }
+
+    checkCredentials(credentials: any): Observable<any> {
+        return this.http.post(`${this.apiUrl}/checkCredentials`, credentials);
+    }
+
+    getResources(userId: number): Observable<any> {
+        return this.http.get(`${this.apiUrl}/resources/${userId}`);
+    }
+
+  // ACCOUNTS AND CATEGORIES
+
+    getAccounts(userId: number): Observable<any[]> {
+        return this.http.get<any[]>(`${this.apiUrl}/accounts/${userId}`);
+    }
+
+    getAccountTypes(): Observable<any[]> {
+        return this.http.get<any[]>(`${this.apiUrl}/account-types`);
+    }
+
+    createAccount(userId: number, accountData: any): Observable<any> {
+        return this.http.post(`${this.apiUrl}/accounts/${userId}`, accountData);
+    }
+
+    updateAccount(userId: number, accountId: number, accountData: any): Observable<any> {
+        return this.http.put(`${this.apiUrl}/accounts/${userId}/${accountId}`,accountData);
+    }
+
+    getCategories(userId: number): Observable<any[]> {
+        return this.http.get<any[]>(`${this.apiUrl}/categories/${userId}`);
+    }
+
+  // BUDGETS
+
+    getBudgets(userId: number): Observable<any[]> {
+        return this.http.get<any[]>(`${this.apiUrl}/budget/${userId}`);
+    }
+
+    createBudget(budgetData: any): Observable<any> {
+        return this.http.post(`${this.apiUrl}/budgets`, budgetData);
+    }
+
+    updateBudget(userId: number, budgetId: number, budgetData: any): Observable<any> {
+        return this.http.put(`${this.apiUrl}/budgets/${userId}/${budgetId}`,budgetData);
+    }
+
+    deleteBudget(userId: number, budgetId: number): Observable<any> {
+        return this.http.delete(`${this.apiUrl}/budgets/${userId}/${budgetId}`);
+    }
+
+  // TRANSACTIONS
+
+    getTransactions(userId: number): Observable<Transaction[]> {
+        return this.http.get<Transaction[]>(`${this.apiUrl}/transactionFilter/${userId}`);
     }
     async getTotalBalance(): Promise<number> {
         const response = await fetch(`${this.API}/accounts/${this.getUserId()}`);
@@ -66,76 +124,119 @@ export class MainService {
             throw new Error(`Could not load accounts (${response.status}).`);
         }
 
-        const accounts: { balance: number | string }[] = await response.json();
-        return accounts.reduce((total, account) => total + Number(account.balance), 0);
+    filterTransactions(userId: number, transactionType: string): Observable<Transaction[]> {
+        return this.http.get<Transaction[]>(`${this.apiUrl}/transactionFilter/${userId}/${encodeURIComponent(transactionType)}`);
     }
 
+    sortTransactions(userId: number,isOrder: string | boolean,order: string): Observable<any[]> {
+        return this.http.get<any[]>(`${this.apiUrl}/transactionFilter/${userId}/${isOrder}/${encodeURIComponent(order)}`);
+    }
 
+    searchTransactions(userId: number, searchTerm: string): Observable<any[]> {
+        return this.http.get<any[]>(`${this.apiUrl}/transactionSearch/${userId}`, {params: { search_term: searchTerm }});
+    }
 
-    async filterTransactionData(
-        userId: number | string,
+    filterTransactionData(
+        userId: number,
         filter: TransactionFilter = 'all',
         order: TransactionOrder = 'newest',
         searchTerm = '',
-    ): Promise<Transaction[]> {
-        const encodedUserId = encodeURIComponent(userId);
+    ): Observable<Transaction[]> {
         const search = searchTerm.trim();
-        const url = search
-            ? `${this.API}/transactionSearch/${encodedUserId}?${new URLSearchParams({ search_term: search })}`
-            : `${this.API}/transactionFilter/${encodedUserId}/true/${order}`;
-        const response = await fetch(url);
+        const transactions$ = search
+            ? this.searchTransactions(userId, search)
+            : this.getTransactions(userId);
 
-        if (!response.ok) {
-            throw new Error(`Could not load transactions (${response.status}).`);
-        }
+        return transactions$.pipe(
+            map((transactions: Transaction[]) => {
+                const normalizedFilter = filter.toLowerCase();
+                const filteredTransactions = transactions.filter(
+                    (transaction) =>
+                        normalizedFilter === 'all' ||
+                        transaction.transaction_type.toLowerCase() === normalizedFilter,
+                );
 
-        const transactions: unknown = await response.json();
-        if (!Array.isArray(transactions)) {
-            throw new Error('The transaction API returned an invalid response.');
-        }
-
-        const normalizedFilter = filter.toLowerCase();
-        const filteredTransactions = (transactions as Transaction[]).filter(
-            (transaction) =>
-                normalizedFilter === 'all' ||
-                transaction.transaction_type.toLowerCase() === normalizedFilter,
-        );
-
-        return this.sortTransactions(filteredTransactions, order);
-    }
-
-    private sortTransactions(transactions: Transaction[], order: TransactionOrder): Transaction[] {
-        return [...transactions].sort((first, second) => {
-            switch (order) {
-                case 'newest':
-                    return new Date(second.transaction_date).getTime() - new Date(first.transaction_date).getTime();
-                case 'oldest':
-                    return new Date(first.transaction_date).getTime() - new Date(second.transaction_date).getTime();
-                case 'a-z':
-                    return first.description.localeCompare(second.description);
-                case 'z-a':
-                    return second.description.localeCompare(first.description);
-                case 'highest':
-                    return Number(second.amount) - Number(first.amount);
-                case 'lowest':
-                    return Number(first.amount) - Number(second.amount);
-            }
-        });
-    }
-
-    async getTotalIncome(): Promise<number> {
-        const incomeTransactions = await this.filterTransactionData(this.getUserId(), 'Income');
-        return incomeTransactions.reduce(
-            (total, transaction) => total + Number(transaction.amount),
-            0,
+                return [...filteredTransactions].sort((first, second) => {
+                    switch (order) {
+                        case 'newest':
+                            return new Date(second.transaction_date).getTime() - new Date(first.transaction_date).getTime();
+                        case 'oldest':
+                            return new Date(first.transaction_date).getTime() - new Date(second.transaction_date).getTime();
+                        case 'a-z':
+                            return first.description.localeCompare(second.description);
+                        case 'z-a':
+                            return second.description.localeCompare(first.description);
+                        case 'highest':
+                            return Number(second.amount) - Number(first.amount);
+                        case 'lowest':
+                            return Number(first.amount) - Number(second.amount);
+                        default:
+                            return 0;
+                    }
+                });
+            }),
         );
     }
 
-    async getTotalExpense(): Promise<number> {
-        const expenseTransactions = await this.filterTransactionData(this.getUserId(), 'Expense');
-        return expenseTransactions.reduce(
-            (total, transaction) => total + Number(transaction.amount),
-            0,
+  // INCOME
+
+    addIncome(userId: number, incomeData: any): Observable<any> {
+        return this.http.post(`${this.apiUrl}/addincome/${userId}`,incomeData);
+    }
+
+    updateIncome(userId: number, transactionId: number, incomeData: any): Observable<any> {
+        return this.http.put(`${this.apiUrl}/income/${userId}/${transactionId}`,incomeData);
+    }
+
+    deleteIncome(userId: number, transactionId: number): Observable<any> {
+        return this.http.delete(`${this.apiUrl}/income/${userId}/${transactionId}`);
+    }
+
+  // EXPENSES
+
+    addExpense(userId: number, expenseData: any): Observable<any> {
+        return this.http.post(`${this.apiUrl}/addexpense/${userId}`,expenseData);
+    }
+
+    updateExpense(userId: number, transactionId: number, expenseData: any): Observable<any> {
+        return this.http.put(`${this.apiUrl}/expense/${userId}/${transactionId}`,expenseData);
+    }
+
+    deleteExpense(userId: number, transactionId: number): Observable<any> {
+        return this.http.delete(`${this.apiUrl}/expense/${userId}/${transactionId}`);
+    }
+
+  // LOCAL STORAGE
+
+    getLocalStorageData(): any {
+        const data = localStorage.getItem('finance-resources');
+        return data ? JSON.parse(data) : null;
+    }
+
+    getUserData(): any {
+        const data = localStorage.getItem('finance-user');
+        return data ? JSON.parse(data) : null;
+    }
+
+    // CALCULATIONS
+
+    getTotalBalance(userId: number): Observable<number> {
+        return this.getAccounts(userId).pipe(
+            map((accounts) =>
+                accounts.reduce(
+                    (total: number, account: { balance: number | string }) =>
+                        total + Number(account.balance),
+                    0,
+                ),
+            ),
+        );
+    }
+
+    getTotalIncome(userId: number): Observable<number> {
+        return this.filterTransactions(userId, 'Income').pipe(
+            map((transactions) =>
+                transactions.reduce((total, transaction) => total + Number(transaction.amount), 0),
+            ),
         );
     }
     
@@ -201,4 +302,11 @@ export class MainService {
         throw new Error(detail);
     }
 
+    getTotalExpense(userId: number): Observable<number> {
+        return this.filterTransactions(userId, 'Expense').pipe(
+            map((transactions) =>
+                transactions.reduce((total, transaction) => total + Number(transaction.amount), 0),
+            ),
+        );
+    }
 }
