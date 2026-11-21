@@ -1,0 +1,93 @@
+<ion-content class="account-content" [fullscreen]="true">
+  <main class="account-page">
+    <header class="page-heading">
+      <p class="eyebrow">ACCOUNT</p>
+      <h1>Account</h1>
+      <p class="page-description">Manage your username and keep your account secure.</p>
+    </header>
+
+    <ion-card class="account-card">
+      <ion-card-header>
+        <p class="section-kicker">PROFILE &amp; SECURITY</p>
+        <ion-card-title>Account details</ion-card-title>
+        <p class="card-description">Verify your current password before saving any changes.</p>
+      </ion-card-header>
+
+      <ion-card-content>
+        <div class="personal-info">
+          <div class="account-field current-username">
+            <ion-label>Current username</ion-label>
+            <ion-input
+              type="text"
+              [value]="current_username"
+              readonly
+              aria-label="Current username">
+            </ion-input>
+          </div>
+
+          <div class="form-divider">
+            <div>
+              <h2>Change your details</h2>
+              <p>Leave the username or password blank if you want to keep it unchanged.</p>
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <div class="account-field">
+              <ion-label>Current password</ion-label>
+              <ion-input
+                type="password"
+                [(ngModel)]="current_password"
+                autocomplete="current-password"
+                placeholder="Enter your current password">
+              </ion-input>
+            </div>
+
+            <div class="account-field">
+              <ion-label>
+                New username
+                <ion-text class="optional-note">(optional)</ion-text>
+              </ion-label>
+              <ion-input
+                type="text"
+                [(ngModel)]="new_username"
+                autocomplete="username"
+                placeholder="Enter a new username">
+              </ion-input>
+            </div>
+
+            <div class="account-field">
+              <ion-label>
+                New password
+                <ion-text class="optional-note">(optional)</ion-text>
+              </ion-label>
+              <ion-input
+                type="password"
+                [(ngModel)]="new_password"
+                autocomplete="new-password"
+                placeholder="At least 6 characters">
+              </ion-input>
+            </div>
+
+            <div class="account-field">
+              <ion-label>Confirm new password</ion-label>
+              <ion-input
+                type="password"
+                [(ngModel)]="confirm_password"
+                autocomplete="new-password"
+                placeholder="Re-enter your new password">
+              </ion-input>
+            </div>
+          </div>
+
+          <div class="form-footer">
+            <p class="security-note">Your current password is required to confirm this update.</p>
+            <ion-button (click)="updateCredentials()" [disabled]="isUpdating">
+              {{ isUpdating ? 'Updating...' : 'Save changes' }}
+            </ion-button>
+          </div>
+        </div>
+      </ion-card-content>
+    </ion-card>
+  </main>
+</ion-content>
