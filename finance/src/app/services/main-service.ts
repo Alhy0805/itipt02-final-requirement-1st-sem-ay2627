@@ -40,6 +40,12 @@ export interface BudgetCategory {
   category_type?: string;
 }
 
+export interface UserCredentialsUpdate {
+  current_password: string;
+  username?: string;
+  password?: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class MainService {
   private readonly apiUrl = 'http://127.0.0.1:8000';
@@ -193,6 +199,40 @@ export class MainService {
   getUserId(): number {
     return Number(this.getUserData()?.user_id ?? 0);
   }
+  updateUserCredentials(userId: number, updateData: UserCredentialsUpdate): Observable<unknown> {
+
+  if (updateData.username && !updateData.password) {
+    return this.http.put<unknown>(
+      `${this.apiUrl}/change/${userId}`,
+      {
+        current_password: updateData.current_password,
+        username: updateData.username
+      }
+    );
+  }
+  else if (updateData.password && !updateData.username) {
+    return this.http.put<unknown>(
+      `${this.apiUrl}/change/${userId}`,
+      {
+        current_password: updateData.current_password,
+        password: updateData.password
+      }
+    );
+  }
+  else if (updateData.username && updateData.password) {
+    return this.http.put<unknown>(
+      `${this.apiUrl}/change/${userId}`,
+      {
+        current_password: updateData.current_password,
+        username: updateData.username,
+        password: updateData.password
+      }
+    );
+  }
+  else {
+    throw new Error('Please provide a username or password to update.');
+  }
+}
 
   async getTotalBalance(): Promise<number>;
   async getTotalBalance(userId: number): Promise<number>;
@@ -283,3 +323,5 @@ export class MainService {
     throw new Error(detail);
   }
 }
+
+

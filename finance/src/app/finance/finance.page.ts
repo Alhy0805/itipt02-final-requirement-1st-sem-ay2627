@@ -19,7 +19,7 @@ import {
   homeOutline,
   logOutOutline,
   pieChartOutline,
-  settingsOutline,
+  personOutline,
   swapHorizontalOutline,
   trophyOutline,
   walletOutline,
@@ -57,7 +57,7 @@ export class FinancePage {
       pieChartOutline,
       trophyOutline,
       barChartOutline,
-      settingsOutline,
+      personOutline,
       logOutOutline,
     });
   }

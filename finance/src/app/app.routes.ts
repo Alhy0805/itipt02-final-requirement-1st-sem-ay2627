@@ -46,8 +46,13 @@ export const routes: Routes = [
         loadComponent: () => import('./saving-goals/saving-goals.page').then((m) => m.SavingGoalsPage),
       },
       {
+        path: 'account',
+        loadComponent: () => import('./account/account.page').then((m) => m.AccountPage),
+      },
+      {
         path: 'settings',
-        loadComponent: () => import('./settings/settings.page').then((m) => m.SettingsPage),
+        redirectTo: 'account',
+        pathMatch: 'full',
       },
     ],
   },
