@@ -969,8 +969,8 @@ def transactionFilter(user_id: int,):
     try:
         cursor.execute(
               """
-              SELECT transaction_type, amount, description,
-                     transaction_date, notes
+              SELECT transaction_id, account_id, category_id, transaction_type,
+                     amount, description, transaction_date, notes
               FROM transactions
               WHERE user_id = %s
               """,
@@ -1015,8 +1015,8 @@ def searchTransactions(user_id: int, search_term: str = Query(min_length=1, max_
     try:
         cursor.execute(
             """
-            SELECT transaction_type, amount, description,
-                   transaction_date, notes
+            SELECT transaction_id, account_id, category_id, transaction_type,
+                   amount, description, transaction_date, notes
             FROM transactions
             WHERE user_id = %s
               AND (
@@ -1188,10 +1188,9 @@ def updateTransaction(
             FROM transactions
             WHERE transaction_id = %s
               AND user_id = %s
-              AND transaction_type = %s
             FOR UPDATE
             """,
-            (transaction_id, user_id, transaction_type),
+            (transaction_id, user_id),
         )
         if cursor.fetchone() is None:
             raise HTTPException(
@@ -1230,24 +1229,24 @@ def updateTransaction(
             UPDATE transactions
             SET account_id = %s,
                 category_id = %s,
+                transaction_type = %s,
                 amount = %s,
                 description = %s,
                 transaction_date = %s,
                 notes = %s
             WHERE transaction_id = %s
               AND user_id = %s
-              AND transaction_type = %s
             """,
             (
                 transaction.account_id,
                 transaction.category_id,
+                transaction_type,
                 transaction.amount,
                 description,
                 transaction.transaction_date,
                 transaction.notes,
                 transaction_id,
                 user_id,
-                transaction_type,
             ),
         )
         conn.commit()

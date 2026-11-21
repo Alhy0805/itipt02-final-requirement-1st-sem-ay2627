@@ -20,7 +20,7 @@ import {
   IonHeader,
   IonListHeader, IonLabel } from '@ionic/angular';
 import { addIcons } from 'ionicons';
-import { ellipsisVertical, searchCircle, swapVertical } from 'ionicons/icons';
+import { createOutline, ellipsisVertical, searchCircle, swapVertical, trashOutline } from 'ionicons/icons';
 import { firstValueFrom } from 'rxjs';
 import { MainService } from '../services/main-service';
 import type { Transaction, TransactionFilter, TransactionOrder } from '../services/main-service';
@@ -70,9 +70,10 @@ export class TransactionManagementPage {
   formAmount: number | null = null;
   formDate = this.getToday();
   formNotes : string = '';
+  editingTransactionId: number | null = null;
 
   constructor() {
-    addIcons({ ellipsisVertical, searchCircle, swapVertical });
+    addIcons({ createOutline, ellipsisVertical, searchCircle, swapVertical, trashOutline });
   }
 
   get categoriesForTransactionType(): any[] {
@@ -90,6 +91,7 @@ export class TransactionManagementPage {
   }
 
   private resetTransactionForm(): void {
+    this.editingTransactionId = null;
     this.selectedAccountId = null;
     this.selectedCategoryId = null;
     this.transactionType = '';
@@ -111,6 +113,7 @@ export class TransactionManagementPage {
     this.userID = this.user?.user_id ?? null;
 
     if (this.userID) {
+      this.refreshLocalResources();
       this.filterTransactions('allBtn');
       this.mainService.getCategories(Number(this.userID)).subscribe({
         next: (categories) => {
@@ -150,6 +153,32 @@ export class TransactionManagementPage {
       return;
     }
 
+    if (this.editingTransactionId !== null) {
+      const updatePayload = {
+        account_id: this.selectedAccountId,
+        category_id: this.selectedCategoryId,
+        amount: Number(this.formAmount),
+        description: this.formDescription.trim(),
+        transaction_date: this.formDate,
+        notes: this.formNotes.trim() || null,
+      };
+      const update$ = this.transactionType === 'income'
+        ? this.mainService.updateIncome(this.userID, this.editingTransactionId, updatePayload)
+        : this.mainService.updateExpense(this.userID, this.editingTransactionId, updatePayload);
+
+      update$.subscribe({
+        next: (updatedTransaction) => {
+          this.refreshLocalResources();
+          this.resetTransactionForm();
+          void this.loadTransactions();
+        },
+        error: (error) => {
+          console.error('Failed to update transaction:', error);
+        },
+      });
+      return;
+    }
+
     if(this.transactionType === 'income'){
       this.mainService.addIncome(this.userID, {
     account_id: this.selectedAccountId,
@@ -161,6 +190,7 @@ export class TransactionManagementPage {
   }).subscribe({
     next: (income) => {
       console.log('Income added:', income);
+    this.refreshLocalResources();
     this.resetTransactionForm();
       void this.loadTransactions();
     },
@@ -179,6 +209,7 @@ export class TransactionManagementPage {
     }).subscribe({
       next: (expense) => {
         console.log('Expense added:', expense);
+      this.refreshLocalResources();
       this.resetTransactionForm();
         void this.loadTransactions();
       },
@@ -200,6 +231,44 @@ export class TransactionManagementPage {
     });
   }
 
+  beginEdit(item: Transaction): void {
+    if (!item.transaction_id) {
+      window.alert('This transaction could not be edited because it has no transaction ID.');
+      return;
+    }
+
+    this.editingTransactionId = item.transaction_id;
+    this.transactionType = item.transaction_type.toLowerCase();
+    this.selectedAccountId = item.account_id ?? null;
+    this.selectedCategoryId = item.category_id ?? null;
+    this.formDescription = item.description;
+    this.formAmount = Number(item.amount);
+    this.formDate = item.transaction_date;
+    this.formNotes = item.notes ?? '';
+  }
+
+  deleteTransaction(item: Transaction): void {
+    if (!item.transaction_id) {
+      window.alert('This transaction could not be deleted because it has no transaction ID.');
+      return;
+    }
+    if (!window.confirm(`Delete "${item.description}"? This cannot be undone.`)) return;
+
+    const delete$ = item.transaction_type.toLowerCase() === 'income'
+      ? this.mainService.deleteIncome(this.userID, item.transaction_id)
+      : this.mainService.deleteExpense(this.userID, item.transaction_id);
+
+    delete$.subscribe({
+      next: () => {
+        this.refreshLocalResources();
+        void this.loadTransactions();
+      },
+      error: (error) => {
+        console.error('Failed to delete transaction:', error);
+      },
+    });
+  }
+
   async filterTransactions(buttonId: string): Promise<void> {
     this.activeFilter = buttonId;
     await this.loadTransactions();
@@ -217,6 +286,19 @@ export class TransactionManagementPage {
   async orderTransactions(order: TransactionOrder): Promise<void> {
     this.transaction_order = order;
     await this.loadTransactions();
+  }
+
+  private refreshLocalResources(): void {
+    if (!this.userID) return;
+
+    this.mainService.getResources(Number(this.userID)).subscribe({
+      next: (resources) => {
+        localStorage.setItem('finance-resources', JSON.stringify(resources));
+      },
+      error: (error) => {
+        console.error('Failed to refresh local resources:', error);
+      },
+    });
   }
 
   async loadTransactions(): Promise<void> {

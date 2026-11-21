@@ -46,6 +46,7 @@
                   <th scope="col">Type</th>
                   <th scope="col" class="amount-cell">Amount</th>
                   <th scope="col">Date</th>
+                  <th scope="col">Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -60,6 +61,29 @@
                   </td>
                   <td class="amount-cell">{{ item.amount }}</td>
                   <td class="date-cell">{{ item.transaction_date }}</td>
+                  <td class="action-cell">
+                    <div class="transaction-actions">
+                      <ion-button
+                        class="action-button edit-button"
+                        fill="clear"
+                        size="small"
+                        [attr.aria-label]="'Edit ' + item.description"
+                        (click)="beginEdit(item)"
+                      >
+                        <ion-icon name="create-outline" aria-hidden="true"></ion-icon>
+                      </ion-button>
+                      <ion-button
+                        class="action-button delete-button"
+                        fill="clear"
+                        size="small"
+                        color="danger"
+                        [attr.aria-label]="'Delete ' + item.description"
+                        (click)="deleteTransaction(item)"
+                      >
+                        <ion-icon name="trash-outline" aria-hidden="true"></ion-icon>
+                      </ion-button>
+                    </div>
+                  </td>
                 </tr>
                 }
               </tbody>
@@ -76,6 +100,18 @@
         <ion-card-title>Transaction Management</ion-card-title>
         <ion-card-content>
           <div class="transaction-form-select-container">
+            <div class="income-inputs-wrapper">
+            <ion-label>Transaction Type</ion-label>
+            <ion-select
+              [(ngModel)]="transactionType"
+              placeholder="Select Type"
+              interface="popover"
+              (ionChange)="selectedCategoryId = null"
+            >
+              <ion-select-option value="income">Income</ion-select-option>
+              <ion-select-option value="expense">Expense</ion-select-option>
+            </ion-select>
+          </div>
               <div class="income-inputs-wrapper">
             <ion-label>Category</ion-label>
             <ion-select
@@ -91,18 +127,7 @@
               }
             </ion-select>
           </div>
-          <div class="income-inputs-wrapper">
-            <ion-label>Transaction Type</ion-label>
-            <ion-select
-              [(ngModel)]="transactionType"
-              placeholder="Select Type"
-              interface="popover"
-              (ionChange)="selectedCategoryId = null"
-            >
-              <ion-select-option value="income">Income</ion-select-option>
-              <ion-select-option value="expense">Expense</ion-select-option>
-            </ion-select>
-          </div>
+          
           <div class="income-inputs-wrapper">
             <ion-label>Wallets</ion-label>
             <ion-select
@@ -135,7 +160,7 @@
             <ion-input class="income-inputs" type="text" placeholder="Add a note optional" [(ngModel)]="formNotes"></ion-input>
           </div>
           <div class="income-inputs-wrapper">
-            <ion-button (click)="enterTransaction()">Submit</ion-button>
+            <ion-button (click)="enterTransaction()">{{ editingTransactionId ? 'Update' : 'Submit' }}</ion-button>
           </div>
         </ion-card-content>
       </ion-card-header>

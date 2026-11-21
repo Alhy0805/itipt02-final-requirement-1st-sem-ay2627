@@ -3,6 +3,9 @@ import { inject, Service } from '@angular/core';
 import { map, Observable } from 'rxjs';
 
 export interface Transaction {
+    transaction_id: number;
+    account_id: number;
+    category_id: number | null;
     amount: number | string;
     transaction_type: string;
     description: string;
