@@ -12,7 +12,7 @@
 
     <ion-card class="goal-form-card">
       <ion-card-header>
-        <ion-card-title>Add a Goal</ion-card-title>
+        <ion-card-title>{{ editingGoalId === null ? 'Add a Goal' : 'Edit Goal' }}</ion-card-title>
       </ion-card-header>
 
       <ion-card-content>
@@ -54,7 +54,16 @@
               type="submit" 
               expand="block" 
               [disabled]="goalForm.invalid">
-              Save Goal
+              {{ editingGoalId === null ? 'Save Goal' : 'Save Changes' }}
+          </ion-button>
+          <ion-button
+            *ngIf="editingGoalId !== null"
+            type="button"
+            expand="block"
+            fill="clear"
+            (click)="resetForm()"
+          >
+            Cancel
           </ion-button>
         </form>
       </ion-card-content>
@@ -74,6 +83,7 @@
             <p>Target Date: {{ goal.target_date | date: 'mediumDate' }}</p>
           </ion-label>
 
+          <ion-button slot="end" fill="clear" (click)="editGoal(goal)">Edit</ion-button>
           <ion-button slot="end" fill="clear" color="danger" (click)="deleteGoal(goal)">Delete</ion-button>
         </ion-item>
 
