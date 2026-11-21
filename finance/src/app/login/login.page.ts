@@ -1,5 +1,5 @@
 
-import { Component } from '@angular/core';
+import { ChangeDetectorRef, Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -21,6 +21,7 @@ import {
   IonNote,
   IonRow,
   IonText,
+  ToastController,
 } from '@ionic/angular';
 
 @Component({
@@ -50,6 +51,9 @@ import {
   ],
 })
 export class LoginPage {
+  private readonly toastController = inject(ToastController);
+  private readonly changeDetector = inject(ChangeDetectorRef);
+
   email = '';
   password = '';
   rememberMe = false;
@@ -103,6 +107,10 @@ export class LoginPage {
 
       if (!response.ok) {
         this.errorMessage = data.detail || 'Login failed';
+        if (response.status === 401) {
+          await this.presentToast('Incorrect email or password.');
+          return;
+        }
         this.openFeedback('Login failed', this.errorMessage);
         return;
       }
@@ -142,6 +150,7 @@ export class LoginPage {
 
     } finally {
       this.isSubmitting = false;
+      this.changeDetector.markForCheck();
     }
   }
 
@@ -149,5 +158,15 @@ export class LoginPage {
     this.alertTitle = title;
     this.errorMessage = message;
     this.isAlertOpen = true;
+  }
+
+  private async presentToast(message: string): Promise<void> {
+    const toast = await this.toastController.create({
+      message,
+      duration: 3000,
+      position: 'bottom',
+      color: 'danger',
+    });
+    await toast.present();
   }
 }
