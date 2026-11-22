@@ -1,15 +1,16 @@
 .dashboard-content {
   width: 100%;
+  max-width: 1200px;
   height: auto;
-  display: grid;
-  grid-template-areas: 'left right';
-  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  margin-inline: auto;
+  display: block;
   padding: 10px;
 }
 
 .dashboard-quick-report {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 220px));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  justify-content: center;
   gap: 15px;
   margin-top: 20px;
 }
@@ -87,12 +88,8 @@
 }
 
 .dashboard-left {
-  grid-area: left;
-  min-width: 0;
-}
-
-.dashboard-right {
-  grid-area: right;
+  width: 100%;
+  margin-inline: auto;
   min-width: 0;
 }
 
@@ -240,6 +237,38 @@
   font-size: 0.875rem;
 }
 
+.dashboard-insights-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 15px;
+  margin-top: 24px;
+}
+
+.spending-overview-card,
+.dashboard-saving-goals-card {
+  min-width: 0;
+  margin: 0;
+  border-radius: 16px;
+}
+
+.spending-overview-card ion-card-header p,
+.dashboard-saving-goals-card ion-card-header p {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.spending-chart-container {
+  width: 100%;
+  height: 260px;
+}
+
+.spending-chart-container canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
 .upcoming-bills-card {
   margin: 20px 0 0 20px;
   border-radius: 16px;
@@ -267,11 +296,7 @@
 
 @media (max-width: 600px) {
   .dashboard-content {
-    grid-template-areas:
-      'left'
-      'right';
-    grid-template-columns: minmax(0, 1fr);
-    gap: 20px;
+    display: block;
   }
 
   .dashboard-quick-report {
@@ -282,8 +307,8 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .dashboard-right {
-    grid-area: right;
+  .dashboard-insights-grid {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
