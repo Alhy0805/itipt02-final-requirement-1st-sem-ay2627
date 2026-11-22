@@ -5,6 +5,33 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { DashboardPage } from './dashboard.page';
 
+vi.mock('chart.js', () => {
+  class MockChart {
+    data: {
+      labels: string[];
+      datasets: Array<{ data: number[] }>;
+    } = { labels: [], datasets: [{ data: [] }, { data: [] }] };
+
+    constructor(_canvas: HTMLCanvasElement, config: { data: { datasets: Array<{ data: number[] }> } }) {
+      this.data = config.data as typeof this.data;
+    }
+
+    static register(): void {}
+    update(): void {}
+    destroy(): void {}
+  }
+
+  return {
+    Chart: MockChart,
+    BarController: class {},
+    BarElement: class {},
+    CategoryScale: class {},
+    LinearScale: class {},
+    Tooltip: class {},
+    Legend: class {},
+  };
+});
+
 describe('DashboardPage', () => {
   let component: DashboardPage;
   let fixture: ComponentFixture<DashboardPage>;

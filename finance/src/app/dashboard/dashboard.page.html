@@ -153,41 +153,59 @@
           </ion-card-content>
         </ion-card>
       </div>
-    </div>
-    <div class="dashboard-right">
-      <ion-card class="saving-goals-card">
-        <ion-card-header class="dashboard-card-header">
-          <ion-card-title>Saving Goals</ion-card-title>
-          <ion-button class="view-all-button" fill="solid" size="small" routerLink="/finance/saving-goals">
-            View All
-          </ion-button>
-        </ion-card-header>
-        <ion-card-content>
-          <div class="saving-goal">
-            <div class="saving-goal-heading">
-              <strong>New laptop</strong>
-              <span>60%</span>
-            </div>
-            <p>₱30,000 saved of ₱50,000</p>
-            <ion-progress-bar value="0.6" color="primary"></ion-progress-bar>
-          </div>
-        </ion-card-content>
-      </ion-card>
 
-      <ion-card class="upcoming-bills-card">
-        <ion-card-header class="dashboard-card-header">
-          <ion-card-title>Upcoming Bills</ion-card-title>
-        </ion-card-header>
-        <ion-list>
-          <ion-item>
-            <ion-label>
-              <h3>Electricity bill</h3>
-              <p>Due Nov 25, 2026</p>
-            </ion-label>
-            <ion-note slot="end">₱2,100.00</ion-note>
-          </ion-item>
-        </ion-list>
-      </ion-card>
+      <div class="dashboard-insights-grid">
+        <ion-card class="spending-overview-card">
+          <ion-card-header class="dashboard-card-header">
+            <div>
+              <ion-card-title>Spending Overview</ion-card-title>
+              <p>Income and expenses over the last 6 months</p>
+            </div>
+          </ion-card-header>
+          <ion-card-content>
+            @if (isDashboardDataLoading) {
+            <p>Loading spending overview...</p>
+            } @else {
+            <div class="spending-chart-container">
+              <canvas
+                #spendingChart
+                role="img"
+                aria-label="Bar chart comparing monthly income and expenses"
+              ></canvas>
+            </div>
+            }
+          </ion-card-content>
+        </ion-card>
+
+        <ion-card class="saving-goals-card dashboard-saving-goals-card">
+          <ion-card-header class="dashboard-card-header">
+            <div>
+              <ion-card-title>Saving Goals</ion-card-title>
+              <p>Progress toward your targets</p>
+            </div>
+            <ion-button class="view-all-button" fill="solid" size="small" routerLink="/finance/saving-goals">
+              View All
+            </ion-button>
+          </ion-card-header>
+          <ion-card-content>
+            @if (isDashboardDataLoading) {
+            <p>Loading saving goals...</p>
+            } @else if (savingGoals.length === 0) {
+            <p class="empty-goals">No saving goals yet.</p>
+            } @else {
+            @for (goal of savingGoals; track goal.goal_id) {
+            <div class="saving-goal">
+              <div class="saving-goal-heading">
+                <strong>{{ goal.goal_name }}</strong>
+                <span>{{ getSavedAmount(goal) | currency:'PHP' }} / {{ goal.target_amount | currency:'PHP' }}</span>
+              </div>
+              <ion-progress-bar [value]="getSavingGoalProgress(goal)" color="success"></ion-progress-bar>
+            </div>
+            }
+            }
+          </ion-card-content>
+        </ion-card>
+      </div>
     </div>
   </section>
 </ion-content>
