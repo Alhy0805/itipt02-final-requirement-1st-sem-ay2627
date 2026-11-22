@@ -65,6 +65,12 @@ export interface GoalContribution {
   notes?: string | null;
 }
 
+export interface GoalContributionInput {
+  amount: number;
+  contribution_date: string;
+  notes: string;
+}
+
 export interface UserCredentialsUpdate {
   current_password: string;
   username?: string;
@@ -359,6 +365,22 @@ export class MainService {
       method: 'DELETE',
     });
     await this.ensureSuccess(response, 'Could not delete saving goal');
+  }
+
+  async createGoalContribution(
+    goalId: number,
+    contribution: GoalContributionInput,
+  ): Promise<GoalContribution> {
+    const response = await fetch(
+      `${this.apiUrl}/saving-goals/${this.getUserId()}/${goalId}/contributions`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(contribution),
+      },
+    );
+    await this.ensureSuccess(response, 'Could not add contribution');
+    return response.json();
   }
 
   updateBudgetCache(budgets: Budget[]): void {

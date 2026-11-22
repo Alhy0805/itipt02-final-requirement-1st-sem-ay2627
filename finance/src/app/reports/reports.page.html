@@ -1,0 +1,40 @@
+<ion-content [fullscreen]="true" class="reports-content">
+  <main class="reports-shell">
+    <section class="page-heading">
+      <div>
+        <p class="section-kicker">FINANCIAL DATA</p>
+        <h1>Reports</h1>
+        <p class="page-subtitle">
+          Download a current Excel workbook containing your accounts, transactions, budgets, goals, bills, and recurring
+          activity.
+        </p>
+      </div>
+      <ion-icon class="heading-icon" name="document-text-outline" aria-hidden="true"></ion-icon>
+    </section>
+
+    <section class="report-card" aria-labelledby="excel-report-title">
+      <div class="report-card-icon">
+        <ion-icon name="download-outline" aria-hidden="true"></ion-icon>
+      </div>
+      <div class="report-card-copy">
+        <h2 id="excel-report-title">Personal finance workbook</h2>
+        <p>
+          Your report is generated from your saved financial data each time you export. Each type of data is organized
+          on its own worksheet.
+        </p>
+        <ul>
+          <li>Summary with balances, income, and expenses</li>
+          <li>Separate worksheets for transactions, accounts, budgets, and goals</li>
+          <li>Includes goal contributions, bills, categories, and recurring transactions</li>
+        </ul>
+      </div>
+      <ion-button class="generate-button" (click)="generateReport()" [disabled]="isGenerating">
+        <ion-icon name="download-outline" slot="start" aria-hidden="true"></ion-icon>
+        {{ isGenerating ? 'Generating…' : 'Generate Excel report' }}
+      </ion-button>
+    </section>
+
+    <p class="success-message" role="status" *ngIf="successMessage">{{ successMessage }}</p>
+    <p class="error-message" role="alert" *ngIf="errorMessage">{{ errorMessage }}</p>
+  </main>
+</ion-content>

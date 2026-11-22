@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { of } from 'rxjs';
 import { afterEach, vi } from 'vitest';
 import { SavingGoalsPage } from './saving-goals.page';
 import { MainService } from '../services/main-service';
@@ -16,10 +17,15 @@ describe('SavingGoalsPage', () => {
             getUserId: vi.fn(() => 1),
             getLocalStorageData: vi.fn(() => null),
             getSavingGoals: vi.fn(async () => []),
-            getResources: vi.fn(async () => ({ goal_contributions: [] })),
+            getResources: vi.fn(() => of({ goal_contributions: [] })),
             createSavingGoal: vi.fn(async (goal) => ({ goal_id: 2, ...goal })),
             updateSavingGoal: vi.fn(async (goalId, goal) => ({ goal_id: goalId, ...goal })),
             deleteSavingGoal: vi.fn(async () => undefined),
+            createGoalContribution: vi.fn(async (goalId, contribution) => ({
+              contribution_id: 3,
+              goal_id: goalId,
+              ...contribution,
+            })),
             updateSavingGoalCache: vi.fn(),
           },
         },
@@ -82,5 +88,48 @@ describe('SavingGoalsPage', () => {
       { goal_id: 1, goal_name: 'Travel fund', target_amount: 7000, target_date: '2027-06-01' },
     ]);
     expect(component.editingGoalId).toBeNull();
+  });
+
+  it('adds a contribution to the selected goal and refreshes the cached totals', async () => {
+    const goal = { goal_id: 4, goal_name: 'Travel fund', target_amount: 3000 };
+    const contribution = {
+      contribution_id: 3,
+      goal_id: 4,
+      amount: 250,
+      contribution_date: '2026-11-22',
+      notes: 'Monthly savings',
+    };
+    const service = TestBed.inject(MainService);
+    vi.mocked(service.createGoalContribution).mockResolvedValue(contribution);
+    component.goals = [goal];
+    component.beginContribution(goal);
+    component.newContribution = {
+      amount: 250,
+      contribution_date: '2026-11-22',
+      notes: ' Monthly savings ',
+    };
+
+    await component.addContribution(goal);
+
+    expect(service.createGoalContribution).toHaveBeenCalledWith(4, {
+      amount: 250,
+      contribution_date: '2026-11-22',
+      notes: 'Monthly savings',
+    });
+    expect(component.contributions).toEqual([contribution]);
+    expect(component.getSavedAmount(goal)).toBe(250);
+    expect(service.updateSavingGoalCache).toHaveBeenCalledWith([goal], [contribution]);
+    expect(component.contributingGoalId).toBeNull();
+  });
+
+  it('rejects a non-positive contribution without calling the service', async () => {
+    const goal = { goal_id: 4, goal_name: 'Travel fund', target_amount: 3000 };
+    const service = TestBed.inject(MainService);
+    component.newContribution.amount = 0;
+
+    await component.addContribution(goal);
+
+    expect(service.createGoalContribution).not.toHaveBeenCalled();
+    expect(component.errorMessage).toBe('Enter a contribution amount greater than zero.');
   });
 });

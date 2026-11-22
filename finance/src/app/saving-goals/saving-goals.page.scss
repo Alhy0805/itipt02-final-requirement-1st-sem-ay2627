@@ -318,6 +318,17 @@ ion-card-header p {
   --background: var(--surface-subtle);
 }
 
+.contribution-form {
+  display: grid;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-muted);
+}
+
+.contribution-form .form-actions {
+  margin-top: 0;
+}
+
 .empty-state {
   padding: 42px 10px;
   color: var(--text-muted);

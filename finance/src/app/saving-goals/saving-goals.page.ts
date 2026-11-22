@@ -21,13 +21,25 @@ import {
 } from '@ionic/angular';
 import { addIcons } from 'ionicons';
 import { addOutline, calendarOutline, createOutline, trashOutline, trendingUpOutline, walletOutline } from 'ionicons/icons';
+import { firstValueFrom } from 'rxjs';
 import { MainService } from '../services/main-service';
-import type { GoalContribution, SavingGoal, SavingGoalInput } from '../services/main-service';
+import type {
+  GoalContribution,
+  GoalContributionInput,
+  SavingGoal,
+  SavingGoalInput,
+} from '../services/main-service';
 
 interface GoalForm {
   goal_name: string;
   target_amount: number | null;
   target_date: string;
+}
+
+interface ContributionForm {
+  amount: number | null;
+  contribution_date: string;
+  notes: string;
 }
 
 @Component({
@@ -64,10 +76,13 @@ export class SavingGoalsPage implements OnInit {
   isLoading = true;
   isSaving = false;
   deletingGoalId: number | null = null;
+  contributingGoalId: number | null = null;
+  isAddingContribution = false;
   errorMessage = '';
   showForm = false;
   searchTerm = '';
   private hasLoadedGoals = false;
+  newContribution: ContributionForm = this.createContributionForm();
 
   newGoal: GoalForm = {
     goal_name: '',
@@ -184,6 +199,47 @@ export class SavingGoalsPage implements OnInit {
     }
   }
 
+  beginContribution(goal: SavingGoal): void {
+    this.errorMessage = '';
+    this.contributingGoalId = goal.goal_id;
+    this.newContribution = this.createContributionForm();
+  }
+
+  cancelContribution(): void {
+    this.contributingGoalId = null;
+    this.newContribution = this.createContributionForm();
+  }
+
+  async addContribution(goal: SavingGoal): Promise<void> {
+    if (this.isAddingContribution) return;
+    const amount = Number(this.newContribution.amount);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      this.errorMessage = 'Enter a contribution amount greater than zero.';
+      return;
+    }
+
+    const payload: GoalContributionInput = {
+      amount,
+      contribution_date: this.newContribution.contribution_date,
+      notes: this.newContribution.notes.trim(),
+    };
+
+    this.isAddingContribution = true;
+    this.errorMessage = '';
+    try {
+      const contribution = await this.mainService.createGoalContribution(goal.goal_id, payload);
+      this.contributions = [...this.contributions, contribution];
+      this.saveGoals();
+      this.cancelContribution();
+    } catch (error) {
+      console.error('Unable to add saving goal contribution:', error);
+      this.errorMessage = error instanceof Error ? error.message : 'Unable to add contribution.';
+    } finally {
+      this.isAddingContribution = false;
+      this.changeDetector.detectChanges();
+    }
+  }
+
   editGoal(goal: SavingGoal): void {
     this.errorMessage = '';
     this.editingGoalId = goal.goal_id;
@@ -228,6 +284,20 @@ export class SavingGoalsPage implements OnInit {
     this.mainService.updateSavingGoalCache(this.goals, this.contributions);
   }
 
+  private createContributionForm(): ContributionForm {
+    const today = new Date();
+    const localDate = [
+      today.getFullYear(),
+      String(today.getMonth() + 1).padStart(2, '0'),
+      String(today.getDate()).padStart(2, '0'),
+    ].join('-');
+    return {
+      amount: null,
+      contribution_date: localDate,
+      notes: '',
+    };
+  }
+
   private async loadGoals(): Promise<void> {
     this.isLoading = true;
     this.errorMessage = '';
@@ -241,7 +311,9 @@ export class SavingGoalsPage implements OnInit {
 
     try {
       this.goals = await this.mainService.getSavingGoals();
-      const resources = await this.mainService.getResources(this.mainService.getUserId()) as {
+      const resources = await firstValueFrom(
+        this.mainService.getResources(this.mainService.getUserId()),
+      ) as {
         goal_contributions?: GoalContribution[];
       };
       this.contributions = resources.goal_contributions ?? [];
