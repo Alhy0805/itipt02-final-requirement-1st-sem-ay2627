@@ -4,7 +4,7 @@ import { IonButton, IonContent, IonIcon } from '@ionic/angular';
 import { addIcons } from 'ionicons';
 import { downloadOutline, documentTextOutline } from 'ionicons/icons';
 import { firstValueFrom } from 'rxjs';
-import { Workbook } from 'exceljs';
+import { Workbook, type Worksheet } from 'exceljs';
 import { MainService } from '../services/main-service';
 import type { GoalContribution, SavingGoal } from '../services/main-service';
 
@@ -179,7 +179,7 @@ export class ReportsPage {
     const accountNames = new Map(resources.accounts.map((account) => [account.account_id, account.account_name]));
     const goalNames = new Map(resources.savings_goals.map((goal) => [goal.goal_id, goal.goal_name]));
 
-    this.addSheet(
+    const summarySheet = this.addSheet(
       workbook,
       'Summary',
       ['Metric', 'Value'],
@@ -195,8 +195,11 @@ export class ReportsPage {
         ['Saving goal count', resources.savings_goals.length],
         ['Goal contribution count', resources.goal_contributions.length],
       ],
-      [2],
     );
+    summarySheet.getCell('B3').numFmt = 'yyyy-mm-dd hh:mm:ss';
+    [4, 5, 6].forEach((row) => {
+      summarySheet.getCell(`B${row}`).numFmt = '"₱"#,##0.00;[Red]-"₱"#,##0.00';
+    });
 
     this.addSheet(
       workbook,
@@ -313,7 +316,7 @@ export class ReportsPage {
     headers: string[],
     rows: ExcelCell[][],
     currencyColumns: number[] = [],
-  ): void {
+  ): Worksheet {
     const worksheet = workbook.addWorksheet(name);
     worksheet.addRow(headers);
     worksheet.addRows(rows);
@@ -334,6 +337,7 @@ export class ReportsPage {
     currencyColumns.forEach((column) => {
       worksheet.getColumn(column).numFmt = '"₱"#,##0.00;[Red]-"₱"#,##0.00';
     });
+    return worksheet;
   }
 
   private getLocalDate(): string {
