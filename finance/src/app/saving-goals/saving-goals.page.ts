@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, type OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, inject, type OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
   IonButton,
@@ -8,26 +8,21 @@ import {
   IonCardHeader,
   IonCardTitle,
   IonContent,
-  IonHeader,
+  IonDatetime,
+  IonDatetimeButton,
+  IonIcon,
   IonInput,
   IonItem,
   IonLabel,
   IonList,
-  IonTitle,
-  IonToolbar
+  IonModal,
+  IonProgressBar,
+  IonSearchbar
 } from '@ionic/angular';
-
-interface SavingGoal {
-  goal_id: number;
-  goal_name: string;
-  target_amount: number;
-  target_date?: string;
-}
-
-interface GoalContribution {
-  goal_id: number;
-  amount: number;
-}
+import { addIcons } from 'ionicons';
+import { addOutline, calendarOutline, createOutline, trashOutline, trendingUpOutline, walletOutline } from 'ionicons/icons';
+import { MainService } from '../services/main-service';
+import type { GoalContribution, SavingGoal, SavingGoalInput } from '../services/main-service';
 
 interface GoalForm {
   goal_name: string;
@@ -48,19 +43,31 @@ interface GoalForm {
     IonCardHeader,
     IonCardTitle,
     IonContent,
-    IonHeader,
+    IonDatetime,
+    IonDatetimeButton,
+    IonIcon,
     IonInput,
     IonItem,
     IonLabel,
     IonList,
-    IonTitle,
-    IonToolbar
+    IonModal,
+    IonProgressBar,
+    IonSearchbar
   ]
 })
 export class SavingGoalsPage implements OnInit {
+  private readonly changeDetector = inject(ChangeDetectorRef);
+  private readonly mainService = inject(MainService);
   goals: SavingGoal[] = [];
   contributions: GoalContribution[] = [];
   editingGoalId: number | null = null;
+  isLoading = true;
+  isSaving = false;
+  deletingGoalId: number | null = null;
+  errorMessage = '';
+  showForm = false;
+  searchTerm = '';
+  private hasLoadedGoals = false;
 
   newGoal: GoalForm = {
     goal_name: '',
@@ -68,80 +75,145 @@ export class SavingGoalsPage implements OnInit {
     target_date: '',
   };
 
+  constructor() {
+    addIcons({
+      addOutline,
+      calendarOutline,
+      createOutline,
+      trashOutline,
+      trendingUpOutline,
+      walletOutline,
+    });
+  }
+
   ngOnInit(): void {
-    const resources = JSON.parse(localStorage.getItem('finance-resources') || '{}');
-    this.goals = resources.savings_goals || [];
-    this.contributions = resources.goal_contributions || [];
+    void this.loadGoals();
+  }
+
+  ionViewWillEnter(): void {
+    if (this.hasLoadedGoals && !this.isLoading) {
+      void this.loadGoals();
+    }
   }
 
   getSavedAmount(goal: SavingGoal): number {
-    let total = 0;
-
-    for (const contribution of this.contributions) {
-      if (contribution.goal_id === goal.goal_id) {
-        total = total + contribution.amount;
-      }
-    }
-
-    return total;
+    return this.contributions
+      .filter((contribution) => Number(contribution.goal_id) === Number(goal.goal_id))
+      .reduce((total, contribution) => total + Number(contribution.amount), 0);
   }
 
-  addGoal(): void {
-    const goalName = this.newGoal.goal_name.trim();
-    const targetAmount = parseFloat(String(this.newGoal.target_amount));
+  getSavingGoalProgress(goal: SavingGoal): number {
+    const targetAmount = Number(goal.target_amount);
+    return targetAmount > 0 ? Math.min(this.getSavedAmount(goal) / targetAmount, 1) : 0;
+  }
 
-    if (goalName === '' || isNaN(targetAmount) || targetAmount <= 0) {
+  get filteredGoals(): SavingGoal[] {
+    const term = this.searchTerm.trim().toLowerCase();
+    if (!term) return this.goals;
+    return this.goals.filter((goal) =>
+      goal.goal_name.toLowerCase().includes(term),
+    );
+  }
+
+  get totalTargetAmount(): number {
+    return this.goals.reduce((total, goal) => total + Number(goal.target_amount), 0);
+  }
+
+  get totalSavedAmount(): number {
+    return this.goals.reduce((total, goal) => total + this.getSavedAmount(goal), 0);
+  }
+
+  beginCreate(): void {
+    this.errorMessage = '';
+    this.editingGoalId = null;
+    this.newGoal = {
+      goal_name: '',
+      target_amount: null,
+      target_date: '',
+    };
+    this.showForm = true;
+  }
+
+  setTargetDate(event: CustomEvent): void {
+    const value = event.detail?.value;
+    this.newGoal.target_date =
+      typeof value === 'string' ? value.split('T')[0] : '';
+  }
+
+  async addGoal(): Promise<void> {
+    if (this.isSaving) return;
+    const goalName = this.newGoal.goal_name.trim();
+    const targetAmount = Number(this.newGoal.target_amount);
+
+    if (goalName === '' || !Number.isFinite(targetAmount) || targetAmount <= 0) {
+      this.errorMessage = 'Enter a goal name and a target amount greater than zero.';
       return;
     }
 
-    if (this.editingGoalId !== null) {
+    const editingId = this.editingGoalId;
+    if (editingId !== null) {
       if (!window.confirm('Save changes to this saving goal?')) {
         return;
       }
-
-      const savedGoal = this.goals.find((goal) => goal.goal_id === this.editingGoalId);
-      if (!savedGoal) {
-        return;
-      }
-
-      savedGoal.goal_name = goalName;
-      savedGoal.target_amount = targetAmount;
-      savedGoal.target_date = this.newGoal.target_date;
-    } else {
-      const goal: SavingGoal = {
-        goal_id: Date.now(),
-        goal_name: goalName,
-        target_amount: targetAmount,
-        target_date: this.newGoal.target_date,
-      };
-
-      this.goals.unshift(goal);
     }
 
-    this.saveGoals();
-    this.resetForm();
+    const payload: SavingGoalInput = {
+      goal_name: goalName,
+      target_amount: targetAmount,
+      target_date: this.newGoal.target_date,
+    };
+
+    this.isSaving = true;
+    this.errorMessage = '';
+    try {
+      const savedGoal = editingId
+        ? await this.mainService.updateSavingGoal(editingId, payload)
+        : await this.mainService.createSavingGoal(payload);
+      this.goals = editingId
+        ? this.goals.map((goal) => (goal.goal_id === editingId ? savedGoal : goal))
+        : [savedGoal, ...this.goals];
+      this.resetForm();
+      this.showForm = false;
+      this.saveGoals();
+    } catch (error) {
+      console.error('Unable to save saving goal:', error);
+      this.errorMessage = error instanceof Error ? error.message : 'Unable to save saving goal.';
+    } finally {
+      this.isSaving = false;
+      this.changeDetector.detectChanges();
+    }
   }
 
   editGoal(goal: SavingGoal): void {
+    this.errorMessage = '';
     this.editingGoalId = goal.goal_id;
     this.newGoal.goal_name = goal.goal_name;
-    this.newGoal.target_amount = goal.target_amount;
+    this.newGoal.target_amount = Number(goal.target_amount);
     this.newGoal.target_date = goal.target_date ?? '';
+    this.showForm = true;
   }
 
-  deleteGoal(goal: SavingGoal): void {
+  async deleteGoal(goal: SavingGoal): Promise<void> {
+    if (this.deletingGoalId !== null) return;
     if (!window.confirm(`Are you sure you want to delete "${goal.goal_name}"?`)) {
       return;
     }
 
-    this.goals = this.goals.filter((savedGoal) => savedGoal.goal_id !== goal.goal_id);
-    this.contributions = this.contributions.filter((contribution) => contribution.goal_id !== goal.goal_id);
-
-    if (this.editingGoalId === goal.goal_id) {
-      this.resetForm();
+    this.deletingGoalId = goal.goal_id;
+    this.errorMessage = '';
+    try {
+      await this.mainService.deleteSavingGoal(goal.goal_id);
+      this.goals = this.goals.filter((savedGoal) => savedGoal.goal_id !== goal.goal_id);
+      this.contributions = this.contributions.filter((contribution) => contribution.goal_id !== goal.goal_id);
+      if (this.editingGoalId === goal.goal_id) this.resetForm();
+      this.saveGoals();
+    } catch (error) {
+      console.error('Unable to delete saving goal:', error);
+      this.errorMessage = error instanceof Error ? error.message : 'Unable to delete saving goal.';
+    } finally {
+      this.deletingGoalId = null;
+      this.changeDetector.detectChanges();
     }
-
-    this.saveGoals();
   }
 
   resetForm(): void {
@@ -149,15 +221,38 @@ export class SavingGoalsPage implements OnInit {
     this.newGoal.goal_name = '';
     this.newGoal.target_amount = null;
     this.newGoal.target_date = '';
+    this.showForm = false;
   }
 
   private saveGoals(): void {
-    const savedResources = localStorage.getItem('finance-resources');
-    const resources = JSON.parse(savedResources || '{}');
+    this.mainService.updateSavingGoalCache(this.goals, this.contributions);
+  }
 
-    resources.savings_goals = this.goals;
-    resources.goal_contributions = this.contributions;
+  private async loadGoals(): Promise<void> {
+    this.isLoading = true;
+    this.errorMessage = '';
 
-    localStorage.setItem('finance-resources', JSON.stringify(resources));
+    const cached = this.mainService.getLocalStorageData<{
+      savings_goals?: SavingGoal[];
+      goal_contributions?: GoalContribution[];
+    }>();
+    this.goals = cached?.savings_goals ?? [];
+    this.contributions = cached?.goal_contributions ?? [];
+
+    try {
+      this.goals = await this.mainService.getSavingGoals();
+      const resources = await this.mainService.getResources(this.mainService.getUserId()) as {
+        goal_contributions?: GoalContribution[];
+      };
+      this.contributions = resources.goal_contributions ?? [];
+      this.saveGoals();
+    } catch (error) {
+      console.error('Unable to load saving goals:', error);
+      this.errorMessage = error instanceof Error ? error.message : 'Unable to load saving goals.';
+    } finally {
+      this.isLoading = false;
+      this.hasLoadedGoals = true;
+      this.changeDetector.detectChanges();
+    }
   }
 }

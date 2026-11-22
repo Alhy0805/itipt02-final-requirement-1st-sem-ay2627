@@ -36,6 +36,9 @@
 /* @import "@ionic/angular/css/palettes/dark.class.css"; */
 /* Dashboard uses its own light visual language. */
 :root {
+  --app-font-family: "Google Sans", "Google Sans Text", "Segoe UI", Arial, sans-serif;
+  --ion-font-family: var(--app-font-family);
+
   /* Primary Colors */
   --primary: #2563EB;
   --primary-hover: #1D4ED8;
@@ -83,6 +86,27 @@
 
   --warning: #D97706;
   --warning-bg: #FEF3C7;
+}
+
+html,
+body,
+ion-app,
+ion-content,
+ion-card,
+ion-item,
+ion-input,
+ion-button,
+ion-searchbar,
+ion-datetime,
+button,
+input,
+select,
+textarea {
+  font-family: var(--app-font-family);
+}
+
+h1 {
+  font-weight: 700;
 }
 
 .budgets-content .budget-chart-layout { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); align-items: stretch; gap: 24px; min-width: 0; }

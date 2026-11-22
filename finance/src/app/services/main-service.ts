@@ -40,6 +40,31 @@ export interface BudgetCategory {
   category_type?: string;
 }
 
+export interface SavingGoal {
+  goal_id: number;
+  goal_name: string;
+  target_amount: number | string;
+  target_date?: string;
+  status?: string;
+  created_at?: string;
+}
+
+export interface SavingGoalInput {
+  goal_name: string;
+  target_amount: number;
+  target_date: string;
+  status?: string;
+}
+
+export interface GoalContribution {
+  contribution_id?: number;
+  goal_id: number;
+  goal_name?: string;
+  amount: number | string;
+  contribution_date?: string;
+  notes?: string | null;
+}
+
 export interface UserCredentialsUpdate {
   current_password: string;
   username?: string;
@@ -302,9 +327,52 @@ export class MainService {
     await this.ensureSuccess(response, 'Could not delete budget');
   }
 
+  async getSavingGoals(): Promise<SavingGoal[]> {
+    const response = await fetch(`${this.apiUrl}/saving-goals/${this.getUserId()}`);
+    await this.ensureSuccess(response, 'Could not load saving goals');
+    return response.json();
+  }
+
+  async createSavingGoal(goal: SavingGoalInput): Promise<SavingGoal> {
+    const response = await fetch(`${this.apiUrl}/saving-goals`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...goal, user_id: this.getUserId() }),
+    });
+    await this.ensureSuccess(response, 'Could not create saving goal');
+    return response.json();
+  }
+
+  async updateSavingGoal(goalId: number, goal: SavingGoalInput): Promise<SavingGoal> {
+    const userId = this.getUserId();
+    const response = await fetch(`${this.apiUrl}/saving-goals/${userId}/${goalId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...goal, user_id: userId }),
+    });
+    await this.ensureSuccess(response, 'Could not update saving goal');
+    return response.json();
+  }
+
+  async deleteSavingGoal(goalId: number): Promise<void> {
+    const response = await fetch(`${this.apiUrl}/saving-goals/${this.getUserId()}/${goalId}`, {
+      method: 'DELETE',
+    });
+    await this.ensureSuccess(response, 'Could not delete saving goal');
+  }
+
   updateBudgetCache(budgets: Budget[]): void {
     const resources = this.getLocalStorageData<Record<string, unknown>>() ?? {};
     this.setLocalStorageData({ ...resources, budgets });
+  }
+
+  updateSavingGoalCache(goals: SavingGoal[], contributions: GoalContribution[] = []): void {
+    const resources = this.getLocalStorageData<Record<string, unknown>>() ?? {};
+    this.setLocalStorageData({
+      ...resources,
+      savings_goals: goals,
+      goal_contributions: contributions,
+    });
   }
 
   private async fetchTransactions(userId: number, type: 'all' | 'Income' | 'Expense'): Promise<Transaction[]> {

@@ -57,6 +57,14 @@ class BudgetCreate(BaseModel):
     end_date: date
 
 
+class SavingGoalCreate(BaseModel):
+    user_id: int = Field(gt=0)
+    goal_name: str = Field(min_length=1, max_length=100)
+    target_amount: Decimal = Field(gt=0, max_digits=12, decimal_places=2)
+    target_date: date | None = None
+    status: str = Field(default="Active", max_length=30)
+
+
 class Income(BaseModel):
     account_id: int = Field(gt=0)
     category_id: int | None = Field(default=None, gt=0)
@@ -609,6 +617,153 @@ def deleteBudget(user_id: int, budget_id: int):
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Budget not found.",
+            )
+        conn.commit()
+    finally:
+        cursor.close()
+        conn.close()
+
+##savings-goals
+@app.get("/saving-goals/{user_id}")
+@app.get("/savings-goals/{user_id}")
+def getSavingGoals(user_id: int):
+    conn = get_connected()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute(
+            """
+            SELECT goal_id, goal_name, target_amount, target_date, status, created_at
+            FROM savings_goals
+            WHERE user_id = %s
+            ORDER BY created_at DESC, goal_id DESC
+            """,
+            (user_id,),
+        )
+        return cursor.fetchall()
+    finally:
+        cursor.close()
+        conn.close()
+
+
+@app.post("/saving-goals", status_code=status.HTTP_201_CREATED)
+@app.post("/savings-goals", status_code=status.HTTP_201_CREATED)
+def createSavingGoal(goal: SavingGoalCreate):
+    goal_name = goal.goal_name.strip()
+    if not goal_name:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Saving goal name cannot be blank.",
+        )
+
+    conn = get_connected()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute(
+            """
+            INSERT INTO savings_goals
+                (user_id, goal_name, target_amount, target_date, status)
+            VALUES (%s, %s, %s, %s, %s)
+            """,
+            (goal.user_id, goal_name, goal.target_amount, goal.target_date, goal.status),
+        )
+        goal_id = cursor.lastrowid
+        conn.commit()
+        cursor.execute(
+            """
+            SELECT goal_id, goal_name, target_amount, target_date, status, created_at
+            FROM savings_goals
+            WHERE goal_id = %s AND user_id = %s
+            """,
+            (goal_id, goal.user_id),
+        )
+        created_goal = cursor.fetchone()
+        if created_goal is None:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Saving goal was saved but could not be loaded.",
+            )
+        return created_goal
+    finally:
+        cursor.close()
+        conn.close()
+
+
+@app.put("/saving-goals/{user_id}/{goal_id}")
+@app.put("/savings-goals/{user_id}/{goal_id}")
+def updateSavingGoal(user_id: int, goal_id: int, goal: SavingGoalCreate):
+    if goal.user_id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Saving goal user does not match the request.",
+        )
+
+    goal_name = goal.goal_name.strip()
+    if not goal_name:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Saving goal name cannot be blank.",
+        )
+
+    conn = get_connected()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute(
+            """
+            UPDATE savings_goals
+            SET goal_name = %s,
+                target_amount = %s,
+                target_date = %s,
+                status = %s
+            WHERE goal_id = %s AND user_id = %s
+            """,
+            (goal_name, goal.target_amount, goal.target_date, goal.status, goal_id, user_id),
+        )
+        if cursor.rowcount == 0:
+            cursor.execute(
+                "SELECT goal_id FROM savings_goals WHERE goal_id = %s AND user_id = %s",
+                (goal_id, user_id),
+            )
+            if cursor.fetchone() is None:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Saving goal not found.",
+                )
+
+        conn.commit()
+        cursor.execute(
+            """
+            SELECT goal_id, goal_name, target_amount, target_date, status, created_at
+            FROM savings_goals
+            WHERE goal_id = %s AND user_id = %s
+            """,
+            (goal_id, user_id),
+        )
+        updated_goal = cursor.fetchone()
+        if updated_goal is None:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Saving goal was updated but could not be loaded.",
+            )
+        return updated_goal
+    finally:
+        cursor.close()
+        conn.close()
+
+
+@app.delete("/saving-goals/{user_id}/{goal_id}", status_code=status.HTTP_204_NO_CONTENT)
+@app.delete("/savings-goals/{user_id}/{goal_id}", status_code=status.HTTP_204_NO_CONTENT)
+def deleteSavingGoal(user_id: int, goal_id: int):
+    conn = get_connected()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            "DELETE FROM savings_goals WHERE goal_id = %s AND user_id = %s",
+            (goal_id, user_id),
+        )
+        if cursor.rowcount == 0:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Saving goal not found.",
             )
         conn.commit()
     finally:
