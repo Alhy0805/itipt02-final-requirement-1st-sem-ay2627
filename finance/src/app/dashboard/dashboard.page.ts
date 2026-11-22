@@ -29,10 +29,6 @@ import {
   Tooltip,
 } from 'chart.js';
 
-interface DashboardAccount {
-  balance: number | string;
-}
-
 interface DashboardTransaction {
   transaction_id: number;
   category_id: number | null;
@@ -49,12 +45,6 @@ interface DashboardBudget {
   budget_amount: number | string;
   start_date: string;
   end_date: string;
-}
-
-interface DashboardResources {
-  accounts?: DashboardAccount[];
-  transactions?: DashboardTransaction[];
-  budgets?: DashboardBudget[];
 }
 
 interface SavingGoal {
@@ -91,6 +81,7 @@ interface GoalContribution {
     CommonModule,
   ],
 })
+
 export class DashboardPage implements OnDestroy {
   private spendingChart?: Chart<'bar', number[], string>;
   userName = '';
