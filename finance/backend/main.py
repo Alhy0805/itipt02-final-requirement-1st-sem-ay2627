@@ -65,6 +65,12 @@ class SavingGoalCreate(BaseModel):
     status: str = Field(default="Active", max_length=30)
 
 
+class GoalContributionCreate(BaseModel):
+    amount: Decimal = Field(gt=0, max_digits=12, decimal_places=2)
+    contribution_date: date
+    notes: str | None = Field(default=None, max_length=500)
+
+
 class Income(BaseModel):
     account_id: int = Field(gt=0)
     category_id: int | None = Field(default=None, gt=0)
@@ -683,6 +689,63 @@ def createSavingGoal(goal: SavingGoalCreate):
                 detail="Saving goal was saved but could not be loaded.",
             )
         return created_goal
+    finally:
+        cursor.close()
+        conn.close()
+
+
+@app.post(
+    "/saving-goals/{user_id}/{goal_id}/contributions",
+    status_code=status.HTTP_201_CREATED,
+)
+def createGoalContribution(
+    user_id: int,
+    goal_id: int,
+    contribution: GoalContributionCreate,
+):
+    conn = get_connected()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute(
+            "SELECT goal_id FROM savings_goals WHERE goal_id = %s AND user_id = %s",
+            (goal_id, user_id),
+        )
+        if cursor.fetchone() is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Saving goal not found.",
+            )
+
+        cursor.execute(
+            """
+            INSERT INTO goal_contributions
+                (goal_id, amount, contribution_date, notes)
+            VALUES (%s, %s, %s, %s)
+            """,
+            (
+                goal_id,
+                contribution.amount,
+                contribution.contribution_date,
+                contribution.notes,
+            ),
+        )
+        contribution_id = cursor.lastrowid
+        conn.commit()
+        cursor.execute(
+            """
+            SELECT contribution_id, goal_id, amount, contribution_date, notes
+            FROM goal_contributions
+            WHERE contribution_id = %s
+            """,
+            (contribution_id,),
+        )
+        created_contribution = cursor.fetchone()
+        if created_contribution is None:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Contribution was saved but could not be loaded.",
+            )
+        return created_contribution
     finally:
         cursor.close()
         conn.close()

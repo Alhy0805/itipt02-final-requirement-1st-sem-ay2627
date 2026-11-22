@@ -168,6 +168,59 @@
               </div>
               <ion-progress-bar [value]="getSavingGoalProgress(goal)" color="success"></ion-progress-bar>
             </div>
+
+            <ion-button
+              *ngIf="contributingGoalId !== goal.goal_id"
+              fill="outline"
+              size="small"
+              (click)="beginContribution(goal)"
+            >
+              <ion-icon name="add-outline" slot="start" aria-hidden="true"></ion-icon>
+              Add contribution
+            </ion-button>
+
+            <form
+              class="contribution-form"
+              *ngIf="contributingGoalId === goal.goal_id"
+              (ngSubmit)="addContribution(goal)"
+            >
+              <label class="goal-field">
+                <span>Contribution amount</span>
+                <ion-input
+                  [(ngModel)]="newContribution.amount"
+                  name="contribution_amount"
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  placeholder="0.00"
+                  required
+                ></ion-input>
+              </label>
+              <label class="goal-field">
+                <span>Contribution date</span>
+                <ion-input
+                  [(ngModel)]="newContribution.contribution_date"
+                  name="contribution_date"
+                  type="date"
+                  required
+                ></ion-input>
+              </label>
+              <label class="goal-field">
+                <span>Note (optional)</span>
+                <ion-input
+                  [(ngModel)]="newContribution.notes"
+                  name="contribution_notes"
+                  type="text"
+                  placeholder="e.g. Monthly savings"
+                ></ion-input>
+              </label>
+              <div class="form-actions">
+                <ion-button fill="clear" type="button" (click)="cancelContribution()">Cancel</ion-button>
+                <ion-button type="submit" [disabled]="isAddingContribution">
+                  {{ isAddingContribution ? 'Adding…' : 'Save contribution' }}
+                </ion-button>
+              </div>
+            </form>
           </article>
         </section>
 
