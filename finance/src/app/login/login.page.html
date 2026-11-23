@@ -1,8 +1,17 @@
 <ion-content [fullscreen]="true" class="login-content">
+  <ion-alert
+    [isOpen]="isAlertOpen"
+    [header]="alertTitle"
+    [message]="errorMessage"
+    [buttons]="['OK']"
+    (didDismiss)="isAlertOpen = false"
+  ></ion-alert>
   <div class="login-container">
     <ion-card class="login-card">
       <ion-card-content>
-        <ion-text class="brand-name"><ion-text>Finance</ion-text><ion-text class="brand-accent">Tracker</ion-text></ion-text>
+        <ion-text class="brand-name"
+          ><ion-text>Finance</ion-text><ion-text class="brand-accent">Tracker</ion-text></ion-text
+        >
         <div class="login-heading">
           <h1>Welcome back!</h1>
           <p>Log in to manage your finances and stay on top of your goals.</p>
@@ -23,12 +32,7 @@
           </ion-item>
           <ion-text class="field-error" *ngIf="formSubmitted && !isEmailValid">Enter a valid email address.</ion-text>
 
-          <ion-text class="password-label"
-            ><ion-label for="password">Password</ion-label
-            ><ion-button fill="clear" size="small" href="#forgot-password" (click)="$event.preventDefault()"
-              >Forgot password?</ion-button
-            ></ion-text
-          >
+          <ion-text class="password-label"><ion-label for="password">Password</ion-label></ion-text>
           <ion-item class="input-wrap" [class.invalid]="formSubmitted && !isPasswordValid">
             <ion-icon name="lock-closed-outline" slot="start" aria-hidden="true"></ion-icon>
             <ion-input
@@ -53,10 +57,6 @@
             >Password must contain at least 6 characters.</ion-text
           >
 
-          <ion-item class="remember"
-            ><ion-checkbox slot="start" name="rememberMe" [(ngModel)]="rememberMe"></ion-checkbox
-            ><ion-label>Remember me</ion-label></ion-item
-          >
           <ion-button expand="block" class="sign-in" [disabled]="isSubmitting" (click)="signIn()">
             <ion-text *ngIf="!isSubmitting">Sign in <ion-icon name="arrow-forward-outline"></ion-icon></ion-text>
             <ion-text *ngIf="isSubmitting" class="button-loading"><ion-text></ion-text>Signing in...</ion-text>

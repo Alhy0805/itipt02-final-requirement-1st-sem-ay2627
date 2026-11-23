@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { map, Observable } from 'rxjs';
+import { map, type Observable } from 'rxjs';
 
 export interface Transaction {
   transaction_id: number;
@@ -77,6 +77,24 @@ export interface UserCredentialsUpdate {
   password?: string;
 }
 
+export interface LoginCredentials {
+  email: string;
+  password: string;
+}
+
+export interface AuthenticatedUser {
+  user_id: number;
+  full_name: string;
+  email: string;
+  profile_image: string | null;
+  currency: string | null;
+}
+
+export interface LoginResponse {
+  message: string;
+  user: AuthenticatedUser;
+}
+
 @Injectable({ providedIn: 'root' })
 export class MainService {
   private readonly apiUrl = 'http://127.0.0.1:8000';
@@ -94,12 +112,12 @@ export class MainService {
     return this.http.post<unknown>(`${this.apiUrl}/signup`, userData);
   }
 
-  checkCredentials(credentials: unknown): Observable<unknown> {
-    return this.http.post<unknown>(`${this.apiUrl}/checkCredentials`, credentials);
+  checkCredentials(credentials: LoginCredentials): Observable<LoginResponse> {
+    return this.http.post<LoginResponse>(`${this.apiUrl}/checkCredentials`, credentials);
   }
 
-  getResources(userId: number): Observable<unknown> {
-    return this.http.get<unknown>(`${this.apiUrl}/resources/${userId}`);
+  getResources(userId: number): Observable<Record<string, unknown>> {
+    return this.http.get<Record<string, unknown>>(`${this.apiUrl}/resources/${userId}`);
   }
 
   getAccounts(userId: number): Observable<any[]> {
@@ -271,7 +289,7 @@ export class MainService {
     const id = userId ?? this.getUserId();
     const response = await fetch(`${this.apiUrl}/accounts/${id}`);
     await this.ensureSuccess(response, 'Could not load accounts');
-    const accounts = await response.json() as Array<{ balance: number | string }>;
+    const accounts = (await response.json()) as { balance: number | string }[];
     return accounts.reduce((total, account) => total + Number(account.balance), 0);
   }
 

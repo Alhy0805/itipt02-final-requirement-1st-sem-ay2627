@@ -10,7 +10,7 @@
 .signup-container {
   box-sizing: border-box;
   display: flex;
-  min-height: 100%;
+  min-height: 100vh;
   align-items: center;
   justify-content: center;
   padding: 20px;
@@ -18,6 +18,10 @@
 }
 
 .signup-card {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 40px);
   width: min(100%, 440px);
   margin: 0;
   border: 1px solid var(--border);
@@ -27,6 +31,10 @@
 }
 
 .signup-card ion-card-content {
+  box-sizing: border-box;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
   padding: 24px;
 }
 
@@ -128,36 +136,6 @@
   font-size: 12px;
 }
 
-.terms {
-  --background: transparent;
-  --min-height: 42px;
-  --padding-start: 0;
-  --inner-padding-end: 0;
-
-  margin: 8px 0 0;
-}
-
-.terms ion-checkbox {
-  --size: 16px;
-  --checkbox-background-checked: var(--primary);
-
-  margin-inline-end: 8px;
-}
-
-.terms ion-label {
-  color: var(--text-secondary);
-  font-size: 12px;
-}
-
-.terms-invalid ion-label {
-  color: var(--expense);
-}
-
-.terms-error {
-  min-height: 14px;
-  margin-top: 0;
-}
-
 .create-account {
   width: 100%;
   height: 48px;
@@ -188,8 +166,13 @@
 }
 
 .login-link {
-  display: block;
-  margin: 20px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: auto 0 0;
+  padding-top: 20px;
   color: var(--text-muted);
   font-size: 13px;
   text-align: center;
@@ -207,6 +190,10 @@
 @media (max-width: 380px) {
   .signup-container {
     padding: 12px;
+  }
+
+  .signup-card {
+    min-height: calc(100vh - 24px);
   }
 
   .signup-card ion-card-content {

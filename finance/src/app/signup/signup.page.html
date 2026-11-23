@@ -83,14 +83,6 @@
             </ion-item>
             <ion-text class="field-error" *ngIf="formSubmitted && !isConfirmationValid">Passwords must match.</ion-text>
 
-            <ion-item class="terms" [class.terms-invalid]="formSubmitted && !acceptedTerms">
-              <ion-checkbox slot="start" name="acceptedTerms" [(ngModel)]="acceptedTerms"></ion-checkbox>
-              <ion-label>I agree to the Terms of Service and Privacy Policy.</ion-label>
-            </ion-item>
-            <ion-text class="field-error terms-error" *ngIf="formSubmitted && !acceptedTerms"
-              >You must accept the terms to continue.</ion-text
-            >
-
             <ion-button expand="block" type="submit" class="create-account" [disabled]="isSubmitting">
               <ng-container *ngIf="isSubmitting; else createAccountLabel">Creating account...</ng-container>
               <ng-template #createAccountLabel>

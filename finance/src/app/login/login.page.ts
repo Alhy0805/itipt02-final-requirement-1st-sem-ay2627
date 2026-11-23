@@ -1,6 +1,6 @@
-
-import { ChangeDetectorRef, Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
+import { ChangeDetectorRef, Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import {
@@ -8,21 +8,18 @@ import {
   IonAlert,
   IonCard,
   IonCardContent,
-  IonCardHeader,
-  IonCheckbox,
-  IonCol,
   IonContent,
-  IonGrid,
   IonIcon,
   IonInput,
   IonItem,
   IonLabel,
   IonList,
-  IonNote,
-  IonRow,
   IonText,
   ToastController,
 } from '@ionic/angular';
+import { firstValueFrom } from 'rxjs';
+
+import { MainService } from '../services/main-service';
 
 @Component({
   selector: 'app-login',
@@ -33,18 +30,12 @@ import {
     IonAlert,
     IonCard,
     IonCardContent,
-    IonCardHeader,
-    IonCheckbox,
-    IonCol,
     IonContent,
-    IonGrid,
     IonIcon,
     IonInput,
     IonItem,
     IonLabel,
     IonList,
-    IonNote,
-    IonRow,
     IonText,
     RouterLink,
     CommonModule,
@@ -54,20 +45,17 @@ import {
 export class LoginPage {
   private readonly toastController = inject(ToastController);
   private readonly changeDetector = inject(ChangeDetectorRef);
+  private readonly mainService = inject(MainService);
+  private readonly router = inject(Router);
 
   email = '';
   password = '';
-  rememberMe = false;
   showPassword = false;
   isSubmitting = false;
   formSubmitted = false;
   errorMessage = '';
   isAlertOpen = false;
   alertTitle = 'Login failed';
-
-  api = 'http://127.0.0.1:8000/checkCredentials';
-
-  constructor(private readonly router: Router) {}
 
   get isEmailValid(): boolean {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.email);
@@ -90,65 +78,34 @@ export class LoginPage {
     if (!this.isEmailValid || !this.isPasswordValid || this.isSubmitting) return;
 
     this.isSubmitting = true;
-    await new Promise((resolve) => setTimeout(resolve, 500));
 
     try {
-      const response = await fetch(this.api, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: this.email,
+      const data = await firstValueFrom(
+        this.mainService.checkCredentials({
+          email: this.email.trim(),
           password: this.password,
         }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        this.errorMessage = data.detail || 'Login failed';
-        if (response.status === 401) {
-          await this.presentToast('Incorrect email or password.');
-          return;
-        }
-        this.openFeedback('Login failed', this.errorMessage);
-        return;
-      }
-
-      if (!data.user) {
-        this.errorMessage = 'The backend returned an incomplete login response.';
-        this.openFeedback('Login failed', this.errorMessage);
-        return;
-      }
-
-      const resourcesResponse = await fetch(
-        `http://127.0.0.1:8000/resources/${data.user.user_id}`,
       );
 
-      const resources = await resourcesResponse.json();
-
-      if (!resourcesResponse.ok) {
-        throw new Error(
-          resources.detail || `Could not load user resources (${resourcesResponse.status}).`,
-        );
+      if (!data.user) {
+        throw new Error('The backend returned an incomplete login response.');
       }
 
-      // Store current user's data only
+      const resources = await firstValueFrom(this.mainService.getResources(data.user.user_id));
+
       localStorage.setItem('finance-user', JSON.stringify(data.user));
       localStorage.setItem('finance-resources', JSON.stringify(resources));
 
       this.errorMessage = '';
-
-      // redirection
       await this.router.navigateByUrl('/finance/dashboard', { replaceUrl: true });
-
     } catch (error) {
       console.error('Login error:', error);
-      this.errorMessage =
-        error instanceof Error ? error.message : 'Cannot connect to the backend';
-      this.openFeedback('Connection error', this.errorMessage);
-
+      this.errorMessage = this.getErrorMessage(error, 'Cannot connect to the backend');
+      if (error instanceof HttpErrorResponse && error.status === 401) {
+        await this.presentToast('Incorrect email or password.');
+      } else {
+        this.openFeedback(error instanceof HttpErrorResponse ? 'Connection error' : 'Login failed', this.errorMessage);
+      }
     } finally {
       this.isSubmitting = false;
       this.changeDetector.markForCheck();
@@ -159,6 +116,14 @@ export class LoginPage {
     this.alertTitle = title;
     this.errorMessage = message;
     this.isAlertOpen = true;
+  }
+
+  private getErrorMessage(error: unknown, fallback: string): string {
+    if (error instanceof HttpErrorResponse) {
+      const detail = error.error?.detail;
+      return typeof detail === 'string' ? detail : fallback;
+    }
+    return error instanceof Error ? error.message : fallback;
   }
 
   private async presentToast(message: string): Promise<void> {

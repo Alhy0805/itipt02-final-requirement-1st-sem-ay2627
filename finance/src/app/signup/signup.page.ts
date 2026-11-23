@@ -6,7 +6,6 @@ import {
   IonButton,
   IonCard,
   IonCardContent,
-  IonCheckbox,
   IonContent,
   IonIcon,
   IonInput,
@@ -24,7 +23,6 @@ import {
     IonButton,
     IonCard,
     IonCardContent,
-    IonCheckbox,
     IonContent,
     IonIcon,
     IonInput,
@@ -42,7 +40,6 @@ export class SignupPage {
   email = '';
   password = '';
   confirmPassword = '';
-  acceptedTerms = false;
   showPassword = false;
   formSubmitted = false;
   formMessage = '';
@@ -79,7 +76,6 @@ export class SignupPage {
       !this.isEmailValid ||
       !this.isPasswordValid ||
       !this.isConfirmationValid ||
-      !this.acceptedTerms ||
       this.isSubmitting
     ) {
       return;
@@ -138,7 +134,6 @@ export class SignupPage {
       localStorage.setItem('finance-resources', JSON.stringify(resources));
       this.password = '';
       this.confirmPassword = '';
-      this.acceptedTerms = false;
       await this.router.navigateByUrl('/finance/dashboard', { replaceUrl: true });
     } catch (error) {
       console.error('Signup error:', error);

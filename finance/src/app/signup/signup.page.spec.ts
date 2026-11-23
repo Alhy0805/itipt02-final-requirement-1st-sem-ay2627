@@ -34,7 +34,6 @@ describe('SignupPage', () => {
     component.email = 'alex@example.com';
     component.password = 'secure-pass';
     component.confirmPassword = 'secure-pass';
-    component.acceptedTerms = true;
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce(
@@ -85,7 +84,6 @@ describe('SignupPage', () => {
     component.email = 'alex@example.com';
     component.password = 'secure-pass';
     component.confirmPassword = 'secure-pass';
-    component.acceptedTerms = true;
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue(
