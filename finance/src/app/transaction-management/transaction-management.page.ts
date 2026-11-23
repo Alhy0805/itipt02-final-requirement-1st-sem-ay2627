@@ -22,6 +22,7 @@ import {
 import { addIcons } from 'ionicons';
 import { createOutline, ellipsisVertical, searchCircle, swapVertical, trashOutline } from 'ionicons/icons';
 import { firstValueFrom } from 'rxjs';
+
 import { MainService } from '../services/main-service';
 import type { Transaction, TransactionFilter, TransactionOrder } from '../services/main-service';
 
@@ -106,6 +107,11 @@ export class TransactionManagementPage {
     this.formAmount = null;
     this.formDate = this.getToday();
     this.formNotes = '';
+  }
+
+  cancelEdit(): void {
+    if (this.editingTransactionId === null) return;
+    this.resetTransactionForm();
   }
 
   ionViewWillEnter():void {

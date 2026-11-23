@@ -438,6 +438,75 @@ def updateAccount(user_id: int, account_id: int, account: AccountUpdate):
         cursor.close()
         conn.close()
 
+
+@app.delete("/accounts/{user_id}/{account_id}", status_code=status.HTTP_204_NO_CONTENT)
+def deleteAccount(user_id: int, account_id: int):
+    conn = get_connected()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute(
+            """
+            SELECT account_id
+            FROM accounts
+            WHERE account_id = %s AND user_id = %s
+            FOR UPDATE
+            """,
+            (account_id, user_id),
+        )
+        if cursor.fetchone() is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Account not found for this user.",
+            )
+
+        cursor.execute(
+            "SELECT 1 FROM transactions WHERE account_id = %s LIMIT 1",
+            (account_id,),
+        )
+        has_transactions = cursor.fetchone() is not None
+        cursor.execute(
+            "SELECT 1 FROM recurring_transactions WHERE account_id = %s LIMIT 1",
+            (account_id,),
+        )
+        has_recurring_transactions = cursor.fetchone() is not None
+        if has_transactions or has_recurring_transactions:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=(
+                    "This account is linked to transactions or recurring transactions "
+                    "and cannot be deleted."
+                ),
+            )
+
+        cursor.execute(
+            "DELETE FROM accounts WHERE account_id = %s AND user_id = %s",
+            (account_id, user_id),
+        )
+        if cursor.rowcount == 0:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Account not found for this user.",
+            )
+        conn.commit()
+    except HTTPException:
+        conn.rollback()
+        raise
+    except mysql.connector.IntegrityError as error:
+        conn.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                "This account is linked to other records and cannot be deleted."
+            ),
+        ) from error
+    except mysql.connector.Error:
+        conn.rollback()
+        raise
+    finally:
+        cursor.close()
+        conn.close()
+
+
 ## categories
 @app.get("/categories/{user_id}")
 def getCategories(user_id: int):

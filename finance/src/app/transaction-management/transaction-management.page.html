@@ -159,8 +159,20 @@
             <ion-label>Notes</ion-label>
             <ion-input class="income-inputs" type="text" placeholder="Add a note optional" [(ngModel)]="formNotes"></ion-input>
           </div>
-          <div class="income-inputs-wrapper">
-            <ion-button (click)="enterTransaction()">{{ editingTransactionId ? 'Update' : 'Submit' }}</ion-button>
+          <div class="transaction-form-actions">
+            @if (editingTransactionId !== null) {
+            <ion-button
+              type="button"
+              class="cancel-edit-button"
+              fill="outline"
+              (click)="cancelEdit()"
+            >
+              Cancel
+            </ion-button>
+            }
+            <ion-button type="button" (click)="enterTransaction()">
+              {{ editingTransactionId !== null ? 'Update' : 'Submit' }}
+            </ion-button>
           </div>
         </ion-card-content>
       </ion-card-header>

@@ -159,6 +159,48 @@ describe('AccountsAndWalletsPage', () => {
     expect(JSON.parse(localStorage.getItem('finance-resources') ?? '{}').accounts).toHaveLength(3);
   });
 
+  it('deletes an account and updates the cached accounts', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify(accountTypes), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify(accounts), { status: 200 }))
+      .mockResolvedValueOnce(new Response(null, { status: 204 }));
+    vi.stubGlobal('fetch', fetchMock);
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    await component.loadAccounts();
+
+    await component.deleteAccount(component.accounts[0]);
+
+    expect(fetchMock).toHaveBeenNthCalledWith(3, 'http://127.0.0.1:8000/accounts/42/8', { method: 'DELETE' });
+    expect(component.accounts).toHaveLength(1);
+    expect(component.accounts[0].account_id).toBe(9);
+    expect(component.totalBalance).toBe(500);
+    expect(component.successMessage).toBe('"Daily Wallet" was deleted.');
+    expect(JSON.parse(localStorage.getItem('finance-resources') ?? '{}').accounts).toHaveLength(1);
+  });
+
+  it('keeps an account when the server rejects deletion', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify(accountTypes), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify(accounts), { status: 200 }))
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ detail: 'This account is linked to transactions and cannot be deleted.' }), {
+          status: 409,
+        }),
+      );
+    vi.stubGlobal('fetch', fetchMock);
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    await component.loadAccounts();
+
+    await component.deleteAccount(component.accounts[0]);
+
+    expect(component.accounts).toHaveLength(2);
+    expect(component.errorMessage).toBe('This account is linked to transactions and cannot be deleted.');
+    expect(component.successMessage).toBe('');
+    expect(JSON.parse(localStorage.getItem('finance-resources') ?? '{}').accounts).toHaveLength(2);
+  });
+
   it('validates account names before creating an account', async () => {
     const fetchMock = vi.fn();
     vi.stubGlobal('fetch', fetchMock);

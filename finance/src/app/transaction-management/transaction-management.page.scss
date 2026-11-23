@@ -154,6 +154,22 @@
   margin-bottom: 12px;
 }
 
+.transaction-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.transaction-form-actions ion-button {
+  margin: 0;
+}
+
+.cancel-edit-button {
+  --border-color: var(--border);
+  --color: var(--text-secondary);
+}
+
 .income-inputs-wrapper ion-select {
   width: 100%;
   min-height: 48px;

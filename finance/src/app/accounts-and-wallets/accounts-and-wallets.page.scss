@@ -144,8 +144,19 @@
   flex: 0 0 auto;
   font-size: 1.1rem;
 }
-.account-card-heading ion-button {
+.account-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
   margin-left: auto;
+}
+
+.account-actions ion-button {
+  margin: 0;
+}
+
+.account-actions .delete-button {
+  --color: var(--expense);
 }
 .account-card h3 {
   overflow: hidden;

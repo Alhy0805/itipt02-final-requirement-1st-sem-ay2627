@@ -11,6 +11,7 @@ import {
   createOutline,
   saveOutline,
   searchOutline,
+  trashOutline,
   walletOutline,
 } from 'ionicons/icons';
 
@@ -62,6 +63,7 @@ export class AccountsAndWalletsPage {
   successMessage = '';
   isLoading = true;
   isSaving = false;
+  isDeletingAccountId: number | null = null;
   isCreatingAccount = false;
 
   constructor() {
@@ -73,6 +75,7 @@ export class AccountsAndWalletsPage {
       createOutline,
       saveOutline,
       searchOutline,
+      trashOutline,
       walletOutline,
     });
   }
@@ -220,7 +223,8 @@ export class AccountsAndWalletsPage {
   }
 
   async saveAccount(): Promise<void> {
-    if (this.isSaving || this.editingAccountId === null || this.userId === null) return;
+    if (this.isSaving || this.isDeletingAccountId !== null || this.editingAccountId === null || this.userId === null)
+      return;
 
     const accountName = this.accountForm.account_name.trim();
     const balance = Number(this.accountForm.balance);
@@ -258,6 +262,36 @@ export class AccountsAndWalletsPage {
       this.errorMessage = error instanceof Error ? error.message : 'Unable to update account.';
     } finally {
       this.isSaving = false;
+      this.changeDetector.detectChanges();
+    }
+  }
+
+  async deleteAccount(account: Account): Promise<void> {
+    if (this.isSaving || this.isDeletingAccountId !== null || this.userId === null) return;
+
+    const confirmed = window.confirm(
+      `Delete "${account.account_name}"? Transactions or recurring transactions prevent deletion, and linked bills will be unassigned.`,
+    );
+    if (!confirmed) return;
+
+    this.isDeletingAccountId = account.account_id;
+    this.errorMessage = '';
+    this.successMessage = '';
+    try {
+      const response = await fetch(`${this.api}/accounts/${this.userId}/${account.account_id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) throw new Error(await this.getResponseError(response));
+
+      this.accounts = this.accounts.filter((existingAccount) => existingAccount.account_id !== account.account_id);
+      if (this.editingAccountId === account.account_id) this.cancelEditing();
+      this.updateCachedAccounts();
+      this.successMessage = `"${account.account_name}" was deleted.`;
+    } catch (error) {
+      console.error('Unable to delete account:', error);
+      this.errorMessage = error instanceof Error ? error.message : 'Unable to delete account.';
+    } finally {
+      this.isDeletingAccountId = null;
       this.changeDetector.detectChanges();
     }
   }

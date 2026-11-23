@@ -120,16 +120,28 @@
               <ion-icon [name]="getAccountIcon(account.account_types)" aria-hidden="true"></ion-icon>
             </span>
             <span class="account-type">{{ getAccountTypeLabel(account.account_types) }}</span>
-            <ion-button
-              class="edit-button"
-              fill="clear"
-              [disabled]="isSaving"
-              [attr.aria-label]="'Edit ' + account.account_name"
-              (click)="startEditing(account)"
-            >
-              <ion-icon slot="start" name="create-outline" aria-hidden="true"></ion-icon>
-              Edit
-            </ion-button>
+            <div class="account-actions">
+              <ion-button
+                class="edit-button"
+                fill="clear"
+                [disabled]="isSaving || isDeletingAccountId !== null"
+                [attr.aria-label]="'Edit ' + account.account_name"
+                (click)="startEditing(account)"
+              >
+                <ion-icon slot="start" name="create-outline" aria-hidden="true"></ion-icon>
+                Edit
+              </ion-button>
+              <ion-button
+                class="delete-button"
+                fill="clear"
+                [disabled]="isSaving || isDeletingAccountId !== null"
+                [attr.aria-label]="'Delete ' + account.account_name"
+                (click)="deleteAccount(account)"
+              >
+                <ion-icon slot="start" name="trash-outline" aria-hidden="true"></ion-icon>
+                {{ isDeletingAccountId === account.account_id ? 'Deleting...' : 'Delete' }}
+              </ion-button>
+            </div>
           </div>
 
           <h3>{{ account.account_name }}</h3>
@@ -158,7 +170,7 @@
                 class="close-button"
                 fill="clear"
                 aria-label="Cancel editing"
-                [disabled]="isSaving"
+                [disabled]="isSaving || isDeletingAccountId !== null"
                 (click)="cancelEditing()"
               >
                 <ion-icon slot="icon-only" name="close-outline" aria-hidden="true"></ion-icon>
@@ -201,12 +213,12 @@
                 type="button"
                 class="cancel-button"
                 fill="outline"
-                [disabled]="isSaving"
+                [disabled]="isSaving || isDeletingAccountId !== null"
                 (click)="cancelEditing()"
               >
                 Cancel
               </ion-button>
-              <ion-button type="submit" class="save-button" [disabled]="isSaving">
+              <ion-button type="submit" class="save-button" [disabled]="isSaving || isDeletingAccountId !== null">
                 <ion-icon slot="start" name="save-outline" aria-hidden="true"></ion-icon>
                 {{ isSaving ? 'Saving...' : 'Save changes' }}
               </ion-button>
