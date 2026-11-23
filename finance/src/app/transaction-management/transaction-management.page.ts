@@ -174,7 +174,7 @@ export class TransactionManagementPage {
         : this.mainService.updateExpense(this.userID, this.editingTransactionId, updatePayload);
 
       update$.subscribe({
-        next: (updatedTransaction) => {
+        next: () => {
           this.refreshLocalResources();
           this.resetTransactionForm();
           void this.loadTransactions();
