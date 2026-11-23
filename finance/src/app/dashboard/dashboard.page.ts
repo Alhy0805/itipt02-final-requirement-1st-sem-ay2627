@@ -283,12 +283,6 @@ export class DashboardPage implements OnDestroy {
       .reduce((total, transaction) => total + Number(transaction.amount), 0);
   }
 
-  private sumTransactions(type: DashboardTransaction['transaction_type']): number {
-    return this.transactions
-      .filter((transaction) => transaction.transaction_type === type)
-      .reduce((total, transaction) => total + Number(transaction.amount), 0);
-  }
-
   getBudgetProgress(budget: DashboardBudget): number {
     const budgetAmount = Number(budget.budget_amount);
     return budgetAmount > 0 ? Math.min(this.getBudgetSpent(budget) / budgetAmount, 1) : 0;
