@@ -20,21 +20,6 @@ SET time_zone = "+00:00";
 --
 -- Database: `finance_db`
 --
-
-DELIMITER $$
---
--- Functions
---
-CREATE DEFINER=`root`@`localhost` FUNCTION `txn_signed_amount` (`t_type` VARCHAR(20), `t_amount` DECIMAL(12,2)) RETURNS DECIMAL(12,2) DETERMINISTIC SQL SECURITY INVOKER BEGIN
-    RETURN CASE
-        WHEN t_type IN ('Income', 'Transfer In') THEN t_amount
-        WHEN t_type IN ('Expense', 'Transfer Out') THEN -t_amount
-        ELSE 0
-    END;
-END$$
-
-DELIMITER ;
-
 -- --------------------------------------------------------
 
 --
@@ -364,7 +349,11 @@ INSERT INTO `transactions` (`transaction_id`, `user_id`, `account_id`, `category
 DELIMITER $$
 CREATE TRIGGER `trg_transactions_ad` AFTER DELETE ON `transactions` FOR EACH ROW BEGIN
   UPDATE accounts
-  SET balance = balance - txn_signed_amount(OLD.transaction_type, OLD.amount)
+  SET balance = balance - CASE
+    WHEN OLD.transaction_type IN ('Income', 'Transfer In') THEN OLD.amount
+    WHEN OLD.transaction_type IN ('Expense', 'Transfer Out') THEN -OLD.amount
+    ELSE 0
+  END
   WHERE account_id = OLD.account_id;
 END
 $$
@@ -372,7 +361,11 @@ DELIMITER ;
 DELIMITER $$
 CREATE TRIGGER `trg_transactions_ai` AFTER INSERT ON `transactions` FOR EACH ROW BEGIN
   UPDATE accounts
-  SET balance = balance + txn_signed_amount(NEW.transaction_type, NEW.amount)
+  SET balance = balance + CASE
+    WHEN NEW.transaction_type IN ('Income', 'Transfer In') THEN NEW.amount
+    WHEN NEW.transaction_type IN ('Expense', 'Transfer Out') THEN -NEW.amount
+    ELSE 0
+  END
   WHERE account_id = NEW.account_id;
 END
 $$
@@ -381,11 +374,19 @@ DELIMITER $$
 CREATE TRIGGER `trg_transactions_au` AFTER UPDATE ON `transactions` FOR EACH ROW BEGIN
   
   UPDATE accounts
-  SET balance = balance - txn_signed_amount(OLD.transaction_type, OLD.amount)
+  SET balance = balance - CASE
+    WHEN OLD.transaction_type IN ('Income', 'Transfer In') THEN OLD.amount
+    WHEN OLD.transaction_type IN ('Expense', 'Transfer Out') THEN -OLD.amount
+    ELSE 0
+  END
   WHERE account_id = OLD.account_id;
  
   UPDATE accounts
-  SET balance = balance + txn_signed_amount(NEW.transaction_type, NEW.amount)
+  SET balance = balance + CASE
+    WHEN NEW.transaction_type IN ('Income', 'Transfer In') THEN NEW.amount
+    WHEN NEW.transaction_type IN ('Expense', 'Transfer Out') THEN -NEW.amount
+    ELSE 0
+  END
   WHERE account_id = NEW.account_id;
 END
 $$
